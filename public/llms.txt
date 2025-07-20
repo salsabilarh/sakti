@@ -1,0 +1,10 @@
+## Pages
+- [- SAKTI Platform](/detailservice): No description available
+- [Admin Panel - SAKTI Platform](/adminpanel): Administrative dashboard for managing users, services, and download logs
+- [Daftar Jasa - SAKTI Platform](/daftarjasa): Browse and explore our comprehensive service catalog with detailed information and documentation
+- [Dashboard - SAKTI Platform](/dashboard): Welcome to SAKTI Dashboard - Your central hub for service management and analytics
+- [Edit Profile - SAKTI Platform](/editprofile): Manage your profile information and password.
+- [Login - SAKTI Platform](/login): Login to SAKTI - Service Knowledge Platform for integrated analytics and catalog management
+- [Lupa Password - SAKTI Platform](/forgotpassword): Reset your password for SAKTI Platform
+- [Marketing Kit - SAKTI Platform](/marketingkit): Download marketing materials, brochures, and documentation for our services
+- [Registrasi - SAKTI Platform](/registration): Create a new account for SAKTI Platform
