@@ -254,7 +254,7 @@ function UsersManagement() {
                 <SelectTrigger><SelectValue placeholder="Filter Unit Kerja" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Unit</SelectItem>
-                  {workUnits.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
+                  {workUnits.map(([id, name]) => <SelectItem key={id} value={name}>{name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={filters.status} onValueChange={(v) => setFilters(f => ({ ...f, status: v === 'all' ? '' : v }))}>

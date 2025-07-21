@@ -12,6 +12,8 @@ import DetailService from '@/pages/DetailService.jsx';
 import MarketingKit from '@/pages/MarketingKit.jsx';
 import AdminPanel from '@/pages/AdminPanel.jsx';
 import EditProfilePage from '@/pages/EditProfilePage.jsx';
+import EditService from '@/pages/EditService.jsx';
+import AddService from './pages/AddService.jsx';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -62,10 +64,24 @@ function AppRoutes() {
           </DashboardLayout>
         </ProtectedRoute>
       } />
+      <Route path="/tambah-jasa" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <AddService />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
       <Route path="/service/:id" element={
         <ProtectedRoute>
           <DashboardLayout>
             <DetailService />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/edit-service/:id" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <EditService />
           </DashboardLayout>
         </ProtectedRoute>
       } />

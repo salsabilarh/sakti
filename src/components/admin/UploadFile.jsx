@@ -25,31 +25,54 @@ function UploadFile() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!uploadFile || !fileType || !serviceName) {
       toast({
         title: "Form tidak lengkap",
         description: "Mohon lengkapi semua field yang diperlukan",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    console.log({
-      file: uploadFile.name,
-      type: fileType,
-      service: serviceName,
-    });
+    const formData = new FormData();
+    formData.append('file', uploadFile);
+    formData.append('file_type', fileType);
+    formData.append('service_id', serviceName); // asumsi serviceName adalah ID (value)
 
-    toast({
-      title: "File Berhasil Diupload!",
-      description: `${uploadFile.name} telah ditambahkan ke marketing kit.`,
-    });
-    setUploadFile(null);
-    setFileType('');
-    setServiceName('');
-    e.target.reset();
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/marketing-kit`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Gagal upload file');
+      }
+
+      toast({
+        title: "File Berhasil Diupload!",
+        description: `${uploadFile.name} telah ditambahkan ke marketing kit.`,
+      });
+
+      // Reset form
+      setUploadFile(null);
+      setFileType('');
+      setServiceName('');
+      e.target.reset();
+    } catch (error) {
+      toast({
+        title: "Upload gagal",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (

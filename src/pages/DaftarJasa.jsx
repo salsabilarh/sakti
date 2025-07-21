@@ -14,29 +14,67 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table.jsx';
-
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 function DaftarJasa() {
-  const { authToken } = useAuth(); // ✅ Ambil token dari context
+  const { authToken } = useAuth();
   const [services, setServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPortfolio, setSelectedPortfolio] = useState('');
-  const [selectedSector, setSelectedSector] = useState('');
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState('');
+  const [selectedSectorId, setSelectedSectorId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
 
+  const [portfolioList, setPortfolioList] = useState([]);
+  const [sectorList, setSectorList] = useState([]);
+
+  // Fetch data filter portfolio & sektor
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [portfolioRes, sectorRes] = await Promise.all([
+          fetch('https://api-sakti-production.up.railway.app/api/portfolios', {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }),
+          fetch('https://api-sakti-production.up.railway.app/api/sectors', {
+            headers: { Authorization: `Bearer ${authToken}` },
+          }),
+        ]);
+
+        const [portfolioData, sectorData] = await Promise.all([
+          portfolioRes.json(),
+          sectorRes.json(),
+        ]);
+
+        setPortfolioList(portfolioData.portfolios || []);
+        setSectorList(sectorData.sectors || []);
+      } catch (err) {
+        console.error('Gagal mengambil data filter:', err);
+      }
+    };
+
+    if (authToken) {
+      fetchOptions();
+    }
+  }, [authToken]);
+
+  // Fetch daftar jasa
   useEffect(() => {
     const fetchServices = async () => {
       setLoading(true);
       try {
         const params = new URLSearchParams();
         if (searchTerm) params.append('search', searchTerm);
-        if (selectedPortfolio) params.append('portfolio', selectedPortfolio);
-        if (selectedSector) params.append('sector', selectedSector);
+        if (selectedPortfolioId) params.append('portfolio', selectedPortfolioId);
+        if (selectedSectorId) params.append('sector', selectedSectorId);
+        params.append('page', page);
+        params.append('limit', limit);
 
         const res = await fetch(`https://api-sakti-production.up.railway.app/api/services?${params.toString()}`, {
           headers: {
-            Authorization: `Bearer ${authToken}`, // ✅ Kirim token di header
+            Authorization: `Bearer ${authToken}`,
           },
         });
 
@@ -47,6 +85,7 @@ function DaftarJasa() {
 
         const data = await res.json();
         setServices(data.services || []);
+        setTotal(data.total || 0);
       } catch (error) {
         console.error('Gagal mengambil data layanan:', error.message);
       } finally {
@@ -55,24 +94,50 @@ function DaftarJasa() {
     };
 
     if (authToken) {
-      fetchServices(); // ✅ Hanya fetch jika token tersedia
+      fetchServices();
     }
-  }, [searchTerm, selectedPortfolio, selectedSector, authToken]);
-
-  const portfolios = useMemo(() => [...new Set(services.map(s => s.portfolio).filter(Boolean))], [services]);
-  const sectors = useMemo(() => [...new Set(services.flatMap(s => s.sectors).filter(Boolean))], [services]);
+  }, [searchTerm, selectedPortfolioId, selectedSectorId, page, limit, authToken]);
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedPortfolio('');
-    setSelectedSector('');
+    setSelectedPortfolioId('');
+    setSelectedSectorId('');
+    setPage(1);
+  };
+
+  const totalPages = Math.ceil(total / limit);
+
+  const handleDelete = async (id) => {
+    const confirm = window.confirm('Apakah Anda yakin ingin menghapus layanan ini?');
+    if (!confirm) return;
+
+    try {
+      const res = await fetch(`https://api-sakti-production.up.railway.app/api/services/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData?.error || 'Gagal menghapus layanan');
+      }
+
+      // Refresh data
+      setServices(prev => prev.filter(service => service.id !== id));
+      setTotal(prev => prev - 1);
+      alert('Layanan berhasil dihapus');
+    } catch (error) {
+      console.error('Gagal menghapus layanan:', error.message);
+      alert(`Gagal menghapus layanan: ${error.message}`);
+    }
   };
 
   return (
     <>
       <Helmet>
         <title>Daftar Jasa - SAKTI Platform</title>
-        <meta name="description" content="Browse and explore our comprehensive service catalog with detailed information and documentation" />
       </Helmet>
 
       <div className="space-y-6">
@@ -81,7 +146,13 @@ function DaftarJasa() {
           <p className="text-gray-600">Jelajahi katalog layanan lengkap dengan informasi detail dan dokumentasi</p>
         </motion.div>
 
+        {/* Filter dan Search */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+          <div className="flex justify-end">
+            <Link to="/tambah-jasa">
+              <Button className="mb-4">+ Tambah Layanan</Button>
+            </Link>
+          </div>
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -95,7 +166,10 @@ function DaftarJasa() {
                 <Input
                   placeholder="Cari nama layanan atau kode..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="pl-10"
                 />
               </div>
@@ -104,27 +178,33 @@ function DaftarJasa() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Portfolio</label>
                   <select
-                    value={selectedPortfolio}
-                    onChange={(e) => setSelectedPortfolio(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={selectedPortfolioId}
+                    onChange={(e) => {
+                      setSelectedPortfolioId(e.target.value);
+                      setPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   >
                     <option value="">Semua Portfolio</option>
-                    {portfolios.map(portfolio => (
-                      <option key={portfolio} value={portfolio}>{portfolio}</option>
+                    {portfolioList.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Nama Sektor</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sektor</label>
                   <select
-                    value={selectedSector}
-                    onChange={(e) => setSelectedSector(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    value={selectedSectorId}
+                    onChange={(e) => {
+                      setSelectedSectorId(e.target.value);
+                      setPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   >
                     <option value="">Semua Sektor</option>
-                    {sectors.map(sector => (
-                      <option key={sector} value={sector}>{sector}</option>
+                    {sectorList.map((s) => (
+                      <option key={s.id} value={s.id}>{s.code}</option>
                     ))}
                   </select>
                 </div>
@@ -139,11 +219,10 @@ function DaftarJasa() {
           </Card>
         </motion.div>
 
+        {/* Status dan Table */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex items-center justify-between">
           <p className="text-gray-600">
-            {loading
-              ? 'Memuat layanan...'
-              : `Menampilkan ${services.length} layanan`}
+            {loading ? 'Memuat layanan...' : `Menampilkan ${services.length} layanan dari total ${total}`}
           </p>
         </motion.div>
 
@@ -171,19 +250,32 @@ function DaftarJasa() {
                       className="hover:bg-gray-50"
                     >
                       <TableCell className="font-medium text-gray-900">{service.name}</TableCell>
-                      <TableCell>
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">{service.code}</code>
-                      </TableCell>
+                      <TableCell><code className="bg-gray-100 px-2 py-1 rounded text-sm">{service.code}</code></TableCell>
                       <TableCell>{service.subPortfolio || '-'}</TableCell>
                       <TableCell>{service.portfolio || '-'}</TableCell>
                       <TableCell>{(service.sectors || []).join(', ') || '-'}</TableCell>
                       <TableCell className="text-center">
-                        <Link to={`/service/${service.id}`}>
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            Detail
+                        <div className="flex justify-center items-center gap-x-2">
+                          <Link to={`/service/${service.id}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="w-4 h-4 mr-1" />
+                              Detail
+                            </Button>
+                          </Link>
+                          <Link to={`/service/${service.id}/edit`}>
+                            <Button variant="outline" size="sm" className="text-blue-600 border-blue-600">
+                              Edit
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-600"
+                            onClick={() => handleDelete(service.id)}
+                          >
+                            Hapus
                           </Button>
-                        </Link>
+                        </div>
                       </TableCell>
                     </motion.tr>
                   ))}
@@ -200,6 +292,33 @@ function DaftarJasa() {
               )}
             </CardContent>
           </Card>
+
+          {/* Pagination */}
+          {!loading && services.length > 0 && (
+            <div className="flex justify-between items-center px-4 py-4">
+              <p className="text-sm text-gray-600">
+                Halaman {page} dari {totalPages}
+              </p>
+              <div className="space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                >
+                  Sebelumnya
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                >
+                  Selanjutnya
+                </Button>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </>
