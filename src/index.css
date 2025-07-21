@@ -48,3 +48,10 @@ body {
 .hover\:bg-primary\/90:hover {
   background-color: #000476
 }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}

@@ -99,7 +99,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-white">
+        <div className="h-screen w-screen overflow-hidden">
           <AppRoutes />
           <Toaster />
         </div>

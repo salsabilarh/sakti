@@ -32,9 +32,7 @@ function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // Asumsikan login adalah async dan mengembalikan response API seperti backend yang kamu tunjukkan
       const result = await login(email, password);
 
       if (result.success) {
@@ -44,7 +42,6 @@ function LoginPage() {
         });
         navigate(from, { replace: true });
       } else {
-        // Tampilkan pesan error backend jika ada, fallback ke pesan default
         toast({
           title: "Login gagal",
           description: result.message || result.error || "Email atau password salah",
@@ -68,31 +65,26 @@ function LoginPage() {
         <title>Login - SAKTI Platform</title>
         <meta name="description" content="Login to SAKTI - Service Knowledge Platform for integrated analytics and catalog management" />
       </Helmet>
-      
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
-        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="w-full max-w-md mx-auto lg:mx-0"
-          >
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Selamat Datang Kembali
-              </h2>
-              <p className="text-gray-600">
-                Masuk ke akun Anda untuk mengakses platform SAKTI
-              </p>
-            </div>
 
-            <Card className="border-0 shadow-xl">
+      <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-blue-50 to-white flex items-center justify-center">
+        <div className="w-full max-w-6xl h-full grid grid-cols-1 lg:grid-cols-2">
+          
+          {/* LEFT FORM */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex items-center justify-center p-4"
+          >
+            <Card className="w-full max-w-md shadow-xl border-0 max-h-full overflow-auto">
               <CardHeader>
-                <CardTitle className="text-xl">Login</CardTitle>
+                <h2 className="text-2xl font-bold text-gray-900">Selamat Datang Kembali</h2>
+                <p className="text-gray-600 text-sm">Masuk ke akun Anda untuk mengakses platform SAKTI</p>
               </CardHeader>
+
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
@@ -104,35 +96,34 @@ function LoginPage() {
                       className="h-11"
                     />
                   </div>
-                  
-                  <div className="space-y-2 relative">
-                    <div className="flex items-center justify-between">
+
+                  <div>
+                    <div className="flex justify-between items-center">
                       <Label htmlFor="password">Password</Label>
                       <Link to="/forgot-password" className="text-sm text-[#000476] hover:underline">
                         Lupa Password?
                       </Link>
                     </div>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Masukkan password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          className="h-11 pr-10"
-                        />
-                        <div
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 cursor-pointer text-gray-500"
-                          style={{ transform: 'translateY(-50%)' }}
-                          aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
-                        >
-                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                        </div>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Masukkan password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="h-11 pr-10"
+                      />
+                      <div
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                        aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </div>
+                    </div>
                   </div>
-                  
+
                   <Button
                     type="submit"
                     className="w-full h-11 text-white font-medium"
@@ -142,8 +133,8 @@ function LoginPage() {
                     {loading ? 'Memproses...' : 'Login'}
                   </Button>
                 </form>
-                
               </CardContent>
+
               <CardFooter className="flex-col items-start">
                 <p className="text-sm text-gray-600">
                   Belum punya akun?{' '}
@@ -155,19 +146,24 @@ function LoginPage() {
             </Card>
           </motion.div>
 
+          {/* RIGHT ILLUSTRATION */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="hidden lg:flex items-center justify-center"
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="hidden lg:flex items-center justify-center px-8"
           >
-            <div className="text-center">
-              <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png" alt="SAKTI Logo" className="h-20 mx-auto mb-8" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            <div className="text-center max-w-md">
+              <img
+                src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png"
+                alt="SAKTI Logo"
+                className="h-20 mx-auto mb-6"
+              />
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
                 Sistem Analitik & Katalog Terintegrasi
               </h3>
-              <p className="text-gray-600 max-w-md mx-auto">
-                Platform terpadu untuk mengelola layanan dan dokumentasi dengan mudah dan efisien
+              <p className="text-gray-600">
+                Platform terpadu untuk mengelola layanan dan dokumentasi dengan mudah dan efisien.
               </p>
             </div>
           </motion.div>
