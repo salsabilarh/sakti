@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 
 const ITEMS_PER_PAGE = 5;
-const roleOptions = ['admin', 'management', 'pdo', 'viewer'];
+const roleOptions = ['Admin', 'Management', 'PDO', 'Viewer'];
 
 function UsersManagement() {
   const { toast } = useToast();
@@ -254,7 +254,7 @@ function UsersManagement() {
                 <SelectTrigger><SelectValue placeholder="Filter Unit Kerja" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Unit</SelectItem>
-                  {workUnits.map(([id, name]) => <SelectItem key={id} value={name}>{name}</SelectItem>)}
+                  {workUnits.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={filters.status} onValueChange={(v) => setFilters(f => ({ ...f, status: v === 'all' ? '' : v }))}>
@@ -286,8 +286,15 @@ function UsersManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedUsers.map((user) => (
-                    <TableRow key={user.id}>
+                  {sortedUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-10 text-gray-500">
+                        Tidak ada pengguna ditemukan.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sortedUsers.map((user) => (
+                      <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.role}</TableCell>
@@ -319,8 +326,9 @@ function UsersManagement() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
+                  ))
+                )}
+              </TableBody>
               </Table>
             )}
           </div>
