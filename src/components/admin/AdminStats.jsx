@@ -36,12 +36,12 @@ function AdminStats() {
 
   const statsList = stats
     ? [
-        { label: 'Total Users', value: stats.total_users, icon: Users }, // 👥 Umum
-        { label: 'Total Pending Users', value: stats.total_waiting_users, icon: Clock }, // ⏳ Menunggu verifikasi
-        { label: 'Total Pending Request Unit Change', value: stats.total_pending_unit_change_requests, icon: Repeat }, // 🔁 Pergantian unit
-        { label: 'Total Password Reset Request', value: stats.total_password_reset_requests, icon: KeyRound }, // 🔑 Reset password
-        { label: 'Active Logged-In Users', value: stats.total_active_users, icon: Activity }, // 📶 User aktif
-        { label: 'Total Downloads', value: stats.total_downloads, icon: Download }, // 📥 Download
+        { label: 'Total Users', value: stats.total_users, icon: Users },
+        { label: 'Total Pending Users', value: stats.total_waiting_users, icon: Clock },
+        { label: 'Total Pending Request Unit Change', value: stats.total_pending_unit_change_requests, icon: Repeat }, 
+        { label: 'Total Password Reset Request', value: stats.total_password_reset_requests, icon: KeyRound },
+        { label: 'Active Logged-In Users', value: stats.total_active_users, icon: Activity },
+        { label: 'Total Downloads', value: stats.total_downloads, icon: Download },
       ]
     : [];
 

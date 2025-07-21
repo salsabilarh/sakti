@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/dialog";
 
 const ITEMS_PER_PAGE = 5;
-
 const roleOptions = ['admin', 'management', 'pdo', 'viewer'];
 
 function UsersManagement() {
@@ -47,9 +46,20 @@ function UsersManagement() {
   const [editingUser, setEditingUser] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [allUnits, setAllUnits] = useState([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: '',
+    workUnitId: '',
+    is_active: true,
+  });
 
   useEffect(() => {
     fetchUsers();
+    fetchAllUnits();
   }, [searchTerm, filters, currentPage]);
 
   const fetchUsers = async () => {
@@ -74,6 +84,8 @@ function UsersManagement() {
         workUnit: u.unit?.name || '-',
         workUnitId: u.unit?.id || '',
         status: u.is_active ? 'Active' : 'Inactive',
+        is_active: u.is_active,
+        is_verified: u.is_verified,
       }));
 
       setUsers(transformed);
@@ -82,6 +94,19 @@ function UsersManagement() {
       toast({ title: 'Gagal memuat data user', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllUnits = async () => {
+    try {
+      const response = await api.get('/units');
+      setAllUnits(response.data.units);
+    } catch (error) {
+      toast({
+        title: 'Gagal memuat unit kerja',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -106,31 +131,85 @@ function UsersManagement() {
   }, [users, sortConfig]);
 
   const handleEditClick = (user) => {
-    setEditingUser({ ...user });
+    setEditingUser({ ...user, workUnitId: user.workUnitId || '' });
     setIsEditModalOpen(true);
   };
 
   const handleSaveUser = async () => {
+    if (!editingUser.workUnitId) {
+      return toast({ title: "Unit Kerja wajib dipilih", variant: "destructive" });
+    }
+
     try {
-      await api.put(`/api/admin/users/${editingUser.id}`, {
+      await api.put(`/admin/users/${editingUser.id}`, {
         full_name: editingUser.name,
         email: editingUser.email,
         role: editingUser.role,
         unit_kerja_id: editingUser.workUnitId,
-        is_active: editingUser.status === 'Active',
+        is_active: editingUser.is_active,
+        is_verified: editingUser.is_verified,
       });
-      toast({ title: "Pengguna Diperbarui", description: `Informasi untuk ${editingUser.name} telah diperbarui.` });
+
+      // Refresh data terlebih dahulu
+      await fetchUsers();
+
+      // Baru tutup modal dan reset state
       setIsEditModalOpen(false);
       setEditingUser(null);
-      fetchUsers();
+
+      toast({
+        title: "Pengguna Diperbarui",
+        description: `Informasi untuk ${editingUser.name} telah diperbarui.`,
+      });
     } catch (err) {
-      toast({ title: "Gagal memperbarui", description: err.message, variant: "destructive" });
+      toast({
+        title: "Gagal memperbarui",
+        description: err.response?.data?.error || err.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddUser = async () => {
+    const { name, email, password, role, workUnitId, is_active } = newUser;
+
+    if (!name || !email || !password || !role || !workUnitId) {
+      return toast({
+        title: "Semua kolom wajib diisi",
+        variant: "destructive",
+      });
+    }
+
+    try {
+      await api.post("/admin/users", {
+        full_name: name,
+        email,
+        password,
+        role,
+        unit_kerja_id: workUnitId,
+        is_active,
+      });
+
+      await fetchUsers();
+      setIsAddModalOpen(false);
+      setNewUser({ name: '', email: '', password: '', role: '', workUnitId: '', is_active: true });
+
+      toast({
+        title: "Pengguna Ditambahkan",
+        description: `${name} berhasil ditambahkan.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Gagal menambahkan",
+        description: err.response?.data?.error || err.message,
+        variant: "destructive",
+      });
     }
   };
 
   const handleDeleteUser = async (userToDelete) => {
     try {
-      await api.delete(`/api/admin/users/${userToDelete.id}`);
+      await api.delete(`/admin/users/${userToDelete.id}`);
       toast({ title: "Pengguna Dihapus", description: `${userToDelete.name} telah dihapus dari sistem.` });
       fetchUsers();
     } catch (err) {
@@ -146,13 +225,16 @@ function UsersManagement() {
     }
   };
 
-  const workUnits = [...new Set(users.map(u => u.workUnit))];
+  const workUnits = allUnits.map(unit => [unit.id, unit.name]);
 
   return (
     <>
       <Card className="border-0 shadow-lg">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Manajemen User</CardTitle>
+          <Button onClick={() => setIsAddModalOpen(true)} style={{ backgroundColor: "#000476", color: "white" }}>
+            Tambah Pengguna
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -172,7 +254,7 @@ function UsersManagement() {
                 <SelectTrigger><SelectValue placeholder="Filter Unit Kerja" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Unit</SelectItem>
-                  {workUnits.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
+                  {workUnits.map(([id, name]) => <SelectItem key={id} value={name}>{name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={filters.status} onValueChange={(v) => setFilters(f => ({ ...f, status: v === 'all' ? '' : v }))}>
@@ -210,7 +292,14 @@ function UsersManagement() {
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.role}</TableCell>
                       <TableCell>{user.workUnit}</TableCell>
-                      <TableCell>{getStatusBadge(user.status)}</TableCell>
+                      <TableCell>
+                        {getStatusBadge(user.status)}<br />
+                        {user.is_verified ? (
+                          <Badge variant="default" className="bg-blue-500 mt-1">Verified</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="mt-1">Unverified</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button size="sm" variant="outline" onClick={() => handleEditClick(user)}><Edit className="w-4 h-4" /></Button>
@@ -269,14 +358,102 @@ function UsersManagement() {
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="workUnit" className="text-right">Unit Kerja</Label>
-                <Input id="workUnit" value={editingUser.workUnit} onChange={(e) => setEditingUser({ ...editingUser, workUnit: e.target.value })} className="col-span-3" />
+                <Label className="text-right">Unit Kerja</Label>
+                <Select value={editingUser.workUnitId} onValueChange={(v) => setEditingUser({ ...editingUser, workUnitId: v })}>
+                  <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {workUnits.map(([id, name]) => (
+                      <SelectItem key={id} value={id}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Status Aktif</Label>
+                <Select value={editingUser.is_active ? 'true' : 'false'} onValueChange={(v) => setEditingUser({ ...editingUser, is_active: v === 'true' })}>
+                  <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Aktif</SelectItem>
+                    <SelectItem value="false">Nonaktif</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Status Verifikasi</Label>
+                <Select value={editingUser.is_verified ? 'true' : 'false'} onValueChange={(v) => setEditingUser({ ...editingUser, is_verified: v === 'true' })}>
+                  <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Terverifikasi</SelectItem>
+                    <SelectItem value="false">Tidak terverifikasi</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
           <DialogFooter>
             <DialogClose asChild><Button type="button" variant="secondary">Batal</Button></DialogClose>
             <Button type="button" onClick={handleSaveUser} style={{ backgroundColor: '#000476' }}>Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Tambah Pengguna Baru</DialogTitle>
+            <DialogDescription>Isi informasi pengguna untuk ditambahkan ke sistem.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Nama</Label>
+              <Input className="col-span-3" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Email</Label>
+              <Input className="col-span-3" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Password</Label>
+              <Input className="col-span-3" type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Role</Label>
+              <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder="Pilih Role" /></SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Unit Kerja</Label>
+              <Select value={newUser.workUnitId} onValueChange={(v) => setNewUser({ ...newUser, workUnitId: v })}>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder="Pilih Unit Kerja" /></SelectTrigger>
+                <SelectContent>
+                  {workUnits.map(([id, name]) => (
+                    <SelectItem key={id} value={id}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Status</Label>
+              <Select value={newUser.is_active ? "true" : "false"} onValueChange={(v) => setNewUser({ ...newUser, is_active: v === "true" })}>
+                <SelectTrigger className="col-span-3"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Aktif</SelectItem>
+                  <SelectItem value="false">Nonaktif</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="secondary">Batal</Button></DialogClose>
+            <Button onClick={handleAddUser} style={{ backgroundColor: '#000476' }}>Simpan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
