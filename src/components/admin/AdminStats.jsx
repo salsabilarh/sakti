@@ -38,6 +38,7 @@ function AdminStats() {
     ? [
         { label: 'Total Users', value: stats.total_users, icon: Users },
         { label: 'Total Pending Users', value: stats.total_waiting_users, icon: UserCheck },
+        { label: 'Total Pending Request Unit Change', value: stats.total_pending_unit_change_requests, icon: UserCheck },
         { label: 'Active Logged-In Users', value: stats.total_active_users, icon: UserX },
         { label: 'Total Downloads', value: stats.total_downloads, icon: Download },
       ]

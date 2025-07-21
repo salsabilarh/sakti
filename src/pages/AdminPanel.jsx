@@ -17,11 +17,11 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('users');
 
   const TABS = [
-    { id: 'users', label: 'Manajemen User', icon: Users, component: UsersManagement },
-    { id: 'waiting', label: 'User Menunggu', icon: UserCheck, component: WaitingUsers },
-    { id: 'unitChange', label: 'Perubahan Unit', icon: GitPullRequest, component: UnitChangeRequests },
-    { id: 'upload', label: 'Upload File', icon: Upload, component: UploadFile },
-    { id: 'services', label: 'Tambah Layanan', icon: Plus, component: AddService },
+    { id: 'users', label: 'Management User', icon: Users, component: UsersManagement },
+    { id: 'waiting', label: 'Pending Users', icon: UserCheck, component: WaitingUsers },
+    { id: 'unitChange', label: 'Pending Unit Change', icon: GitPullRequest, component: UnitChangeRequests },
+    // { id: 'upload', label: 'Upload File', icon: Upload, component: UploadFile },
+    // { id: 'services', label: 'Tambah Layanan', icon: Plus, component: AddService },
     { id: 'logs', label: 'Log Download', icon: Download, component: DownloadLogs },
   ];
 

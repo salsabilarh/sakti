@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -18,40 +17,62 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from "@/components/ui/dialog"
-import api from '@/lib/api'; 
+} from "@/components/ui/dialog";
+import api from '@/lib/api'; // pastikan sudah ada axios instance disini
 
-const workUnitOptions = [
-  'SBU',
-  'PPK',
-  'Cabang Surabaya',
-  'Cabang Denpasar',
-  'Cabang Tarakan',
-  'Cabang Sangatta',
-  'Unit Kerja Lainnya'
-];
+import { Eye, EyeOff } from 'lucide-react'; // icon show/hide password
 
 function EditProfilePage() {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, authToken } = useAuth();
   const { toast } = useToast();
+
+  // State untuk profile info
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    name: user?.full_name || '',
   });
+
+  // State untuk password & show/hide password
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
-  const [newUnit, setNewUnit] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // State untuk unit kerja
+  const [units, setUnits] = useState([]);
+  const [newUnitId, setNewUnitId] = useState('');
+
+  // Ambil data unit dari API saat komponen mount
+  useEffect(() => {
+    async function fetchUnits() {
+      try {
+        const response = await api.get('/units');
+        setUnits(response.data.units || []);
+      } catch (error) {
+        toast({
+          title: "Gagal memuat data unit",
+          description: "Tidak dapat mengambil daftar unit kerja.",
+          variant: "destructive",
+        });
+      }
+    }
+    fetchUnits();
+  }, [toast]);
+
+  // Update form profile info
   const handleInfoChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
+  // Update password input
   const handlePasswordChange = (e) => {
     setPasswordData({ ...passwordData, [e.target.id]: e.target.value });
   };
 
+  // Submit update profil (hanya nama di sini)
   const handleInfoSubmit = (e) => {
     e.preventDefault();
     updateUser({ name: formData.name });
@@ -61,6 +82,7 @@ function EditProfilePage() {
     });
   };
 
+  // Submit update password dengan validasi
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
 
@@ -85,11 +107,17 @@ function EditProfilePage() {
     }
 
     try {
-      const response = await api.put('/auth/update-password', {
-        current_password: passwordData.currentPassword,
-        new_password: passwordData.newPassword,
-        confirm_password: passwordData.confirmPassword
-      });
+      const response = await api.put(
+        '/auth/update-password',
+        {
+          current_password: passwordData.currentPassword,
+          new_password: passwordData.newPassword,
+          confirm_password: passwordData.confirmPassword,
+        },
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
 
       toast({
         title: "Password Diubah!",
@@ -111,16 +139,39 @@ function EditProfilePage() {
     }
   };
 
-  const handleUnitChangeRequest = () => {
-    if (!newUnit) {
-      toast({ title: "Pilih Unit Kerja", description: "Silakan pilih unit kerja baru.", variant: "destructive" });
+  // Submit request perubahan unit kerja
+  const handleUnitChangeRequest = async () => {
+    if (!newUnitId) {
+      toast({
+        title: "Pilih Unit Kerja",
+        description: "Silakan pilih unit kerja baru.",
+        variant: "destructive",
+      });
       return;
     }
-    toast({
-      title: "Permintaan Terkirim",
-      description: `Permintaan perubahan unit kerja ke ${newUnit} telah dikirim ke admin untuk persetujuan.`,
-    });
-    setNewUnit('');
+
+    try {
+      await api.post(
+        '/auth/unit-change-request',
+        { requested_unit_id: newUnitId },
+        {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }
+      );
+
+      toast({
+        title: "Permintaan Terkirim",
+        description: "Permintaan perubahan unit kerja telah dikirim ke admin untuk persetujuan.",
+      });
+
+      setNewUnitId('');
+    } catch (error) {
+      toast({
+        title: "Gagal Mengirim Permintaan",
+        description: error.response?.data?.message || "Silakan coba lagi.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -137,14 +188,26 @@ function EditProfilePage() {
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+          {/* Bagian Profil */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
             <Card className="border-0 shadow-lg">
-              <CardHeader><CardTitle>Informasi Profil</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Informasi Profil</CardTitle>
+              </CardHeader>
               <CardContent>
                 <form onSubmit={handleInfoSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="name">Nama Lengkap</Label>
-                    <Input id="name" value={user?.full_name} disabled />
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={handleInfoChange}
+                      disabled
+                    />
                   </div>
                   <div>
                     <Label htmlFor="email">Email</Label>
@@ -161,7 +224,9 @@ function EditProfilePage() {
                   <div className="flex space-x-2">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button type="button" style={{ backgroundColor: '#000476' }}>Request Ganti Unit</Button>
+                        <Button type="button" style={{ backgroundColor: '#000476' }}>
+                          Request Ganti Unit
+                        </Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
@@ -176,10 +241,16 @@ function EditProfilePage() {
                               Unit Baru
                             </Label>
                             <div className="col-span-3">
-                              <Select onValueChange={setNewUnit}>
-                                <SelectTrigger><SelectValue placeholder="Pilih unit..." /></SelectTrigger>
+                              <Select onValueChange={setNewUnitId} value={newUnitId}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Pilih unit..." />
+                                </SelectTrigger>
                                 <SelectContent>
-                                  {workUnitOptions.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                  {units.map((unit) => (
+                                    <SelectItem key={unit.id} value={unit.id}>
+                                      {unit.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -187,10 +258,17 @@ function EditProfilePage() {
                         </div>
                         <DialogFooter>
                           <DialogClose asChild>
-                            <Button type="button" variant="secondary">Batal</Button>
+                            <Button type="button" variant="secondary">
+                              Batal
+                            </Button>
                           </DialogClose>
                           <DialogClose asChild>
-                            <Button onClick={handleUnitChangeRequest} style={{ backgroundColor: '#000476' }}>Kirim Permintaan</Button>
+                            <Button
+                              onClick={handleUnitChangeRequest}
+                              style={{ backgroundColor: '#000476' }}
+                            >
+                              Kirim Permintaan
+                            </Button>
                           </DialogClose>
                         </DialogFooter>
                       </DialogContent>
@@ -201,24 +279,81 @@ function EditProfilePage() {
             </Card>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+          {/* Bagian Ubah Password */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             <Card className="border-0 shadow-lg">
-              <CardHeader><CardTitle>Ubah Password</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Ubah Password</CardTitle>
+              </CardHeader>
               <CardContent>
                 <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                  <div>
+                  <div className="relative">
                     <Label htmlFor="currentPassword">Password Saat Ini</Label>
-                    <Input id="currentPassword" type="password" value={passwordData.currentPassword} onChange={handlePasswordChange} />
+                    <Input
+                      id="currentPassword"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-3 top-[38px] text-gray-500"
+                      aria-label={showCurrentPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    >
+                      {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
                   </div>
-                  <div>
+
+                  <div className="relative">
                     <Label htmlFor="newPassword">Password Baru</Label>
-                    <Input id="newPassword" type="password" value={passwordData.newPassword} onChange={handlePasswordChange} />
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-[38px] text-gray-500"
+                      aria-label={showNewPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    >
+                      {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
                   </div>
-                  <div>
+
+                  <div className="relative">
                     <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
-                    <Input id="confirmPassword" type="password" value={passwordData.confirmPassword} onChange={handlePasswordChange} />
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-[38px] text-gray-500"
+                      aria-label={showConfirmPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
                   </div>
-                  <Button type="submit" style={{ backgroundColor: '#000476' }}>Ubah Password</Button>
+
+                  <Button type="submit" style={{ backgroundColor: '#000476' }}>
+                    Ubah Password
+                  </Button>
                 </form>
               </CardContent>
             </Card>
