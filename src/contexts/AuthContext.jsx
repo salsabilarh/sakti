@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -20,81 +21,81 @@ export const ROLES = {
 export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const savedAuth = localStorage.getItem('sakti_auth');
-    if (savedAuth) {
-      const authData = JSON.parse(savedAuth);
-      setIsAuthenticated(true);
-      setUser(authData.user);
+  const api = axios.create({
+    baseURL: 'https://api-sakti-production.up.railway.app/api',
+  });
+
+  // Interceptor untuk attach token ke setiap request
+  api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('sakti_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    setLoading(false);
+    return config;
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem('sakti_token');
+    if (token) {
+      setAuthToken(token);
+      getProfile().finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const login = async (email, password) => {
     try {
-      const res = await fetch("https://api-sakti-production.up.railway.app/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await api.post('/auth/login', { email, password });
+      const { token } = res.data;
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        return { success: false, error: data.message || "Login gagal" };
-      }
-
-      const userData = {
-        id: data.data.id,
-        email: data.data.email,
-        role: data.data.role,
-        unit_kerja: data.data.unit_kerja?.name || "-",
-        is_verified: data.data.is_verified,
-        is_active: data.data.is_active,
-      };
-
-      // Simpan token dan user ke localStorage
-      localStorage.setItem("sakti_auth", JSON.stringify({
-        user: userData,
-        token: data.token,
-        timestamp: Date.now(),
-      }));
-
-      setUser(userData);
+      localStorage.setItem('sakti_token', token);
+      setAuthToken(token);
+      await getProfile();
       setIsAuthenticated(true);
-
       return { success: true };
     } catch (err) {
-      return { success: false, error: "Terjadi kesalahan saat login" };
+      return { success: false, error: err.response?.data?.message || 'Login gagal' };
+    }
+  };
+
+  const getProfile = async () => {
+    try {
+      const res = await api.get('/auth/profile');
+      setUser(res.data.user);
+      setIsAuthenticated(true);
+    } catch (err) {
+      setIsAuthenticated(false);
+      setUser(null);
+      setAuthToken(null);
+      localStorage.removeItem('sakti_token');
     }
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
-    localStorage.removeItem('sakti_auth');
+    setAuthToken(null);
+    localStorage.removeItem('sakti_token');
   };
 
   const updateUser = (updatedData) => {
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
-    localStorage.setItem('sakti_auth', JSON.stringify({
-      user: updatedUser,
-      token: localStorage.getItem("sakti_auth")?.token || '',
-      timestamp: Date.now()
-    }));
   };
 
   const value = {
     isAuthenticated,
     user,
+    authToken, // token disediakan di context
     login,
     logout,
     updateUser,
     loading,
-    ROLES
+    ROLES,
   };
 
   return (

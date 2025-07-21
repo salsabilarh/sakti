@@ -1,95 +1,108 @@
 import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Label } from '@/components/ui/label.jsx';
+import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
-} from '@/components/ui/card.jsx';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select.jsx';
-import { useToast } from '@/components/ui/use-toast.js';
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
 
-function RegistrationPage() {
+const RegistrationPage = () => {
+  const navigate = useNavigate();
+  const [workUnits, setWorkUnits] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: '',
     email: '',
+    password: '',
+    confirmPassword: '',
+    fullName: '',
     workUnit: '',
     role: '',
-    password: '',
   });
-  const [workUnitOptions, setWorkUnitOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
-  // 🔁 Fetch work unit data on mount
   useEffect(() => {
     const fetchWorkUnits = async () => {
       try {
-        const response = await fetch(
-          'https://api-sakti-production.up.railway.app/api/units',
-          {
-            headers: {
-              Authorization:
-                'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAzOWJmMWJlLTU5MmMtNDE5YS1iZjNlLTMxYjJlNTdhZGM4YiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1Mjk1MjEyMywiZXhwIjoxNzU1NTQ0MTIzfQ.LRgjkK0aYMT4cWnUQo6KfLLlvF3FLXN8Cv8EoteKZ_I',
-            },
-          }
-        );
-
+        const response = await fetch('https://api-sakti-production.up.railway.app/api/units');
         const data = await response.json();
-        const options = data.units.map((unit) => ({
-          label: unit.name,
-          value: unit.id,
-        }));
-        setWorkUnitOptions(options);
+        setWorkUnits(data.units);  // <-- perbaikan di sini, bukan data.data tapi data.units
       } catch (error) {
-        toast({
-          title: 'Gagal memuat unit kerja',
-          description: 'Silakan coba beberapa saat lagi.',
-          variant: 'destructive',
-        });
+        console.error('Gagal memuat data unit kerja:', error);
       }
     };
-
     fetchWorkUnits();
-  }, [toast]);
+  }, []);
+
+  const isStrongPassword = (password) => {
+    const regex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/;
+    return regex.test(password);
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
+    setFormData((prevState) => ({
+      ...prevState,
+      [id]: value,
+    }));
   };
 
-  const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const validRoles = ['admin', 'management', 'viewer', 'pdo'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: 'Konfirmasi password tidak cocok',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!isStrongPassword(formData.password)) {
+      toast({
+        title: 'Password tidak kuat',
+        description: 'Minimal 8 karakter dan mengandung huruf besar, huruf kecil, angka, dan simbol.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (!validRoles.includes(formData.role)) {
+      toast({
+        title: 'Role tidak valid',
+        description: 'Silakan pilih peran yang valid.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
+
+    // lanjut ke fetch API
     try {
       const response = await fetch(
         'https://api-sakti-production.up.railway.app/api/auth/register',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
+            confirm_password: formData.confirmPassword,
             full_name: formData.fullName,
             unit_kerja_id: formData.workUnit,
             role: formData.role,
@@ -127,138 +140,101 @@ function RegistrationPage() {
   };
 
   return (
-    <>
-      <Helmet>
-        <title>Registrasi - SAKTI Platform</title>
-        <meta
-          name="description"
-          content="Create a new account for SAKTI Platform"
-        />
-      </Helmet>
-
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md"
-        >
-          <div className="mb-8 text-center">
-            <div className="flex items-center justify-center space-x-3 mb-6">
-              <img
-                src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png"
-                alt="SAKTI Logo"
-                className="h-10"
-              />
+    <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Daftar Akun</CardTitle>
+          <CardDescription>Masukkan data Anda untuk membuat akun</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Nama Lengkap</Label>
+              <Input id="fullName" value={formData.fullName} onChange={handleChange} required />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              Buat Akun Baru
-            </h2>
-            <p className="text-gray-600">
-              Daftarkan diri Anda untuk mulai menggunakan platform.
-            </p>
-          </div>
 
-          <Card className="border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-xl">Form Pendaftaran</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Nama Lengkap</Label>
-                  <Input
-                    id="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workUnit">Unit Kerja</Label>
-                  <Select
-                    onValueChange={(value) =>
-                      handleSelectChange('workUnit', value)
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih unit kerja" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {workUnitOptions.map((unit) => (
-                        <SelectItem key={unit.value} value={unit.value}>
-                          {unit.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select
-                    onValueChange={(value) =>
-                      handleSelectChange('role', value)
-                    }
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih role Anda" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="manajemen">Manajemen</SelectItem>
-                      <SelectItem value="pdo">PDO</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={formData.email} onChange={handleChange} required />
+            </div>
 
-                <Button
-                  type="submit"
-                  className="w-full h-11 text-white font-medium"
-                  style={{ backgroundColor: '#000476' }}
-                  disabled={loading}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <div
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                  onClick={() => setShowPassword((prev) => !prev)}
                 >
-                  {loading ? 'Memproses...' : 'Daftar'}
-                </Button>
-              </form>
-            </CardContent>
-            <CardFooter>
-              <p className="text-sm text-gray-600 w-full text-center">
-                Sudah punya akun?{' '}
-                <Link
-                  to="/login"
-                  className="font-medium text-[#000476] hover:underline"
+                  {showPassword ? <EyeOff className="h-5 w-5 text-gray-500" /> : <Eye className="h-5 w-5 text-gray-500" />}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                />
+                <div
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
                 >
-                  Login di sini
-                </Link>
-              </p>
-            </CardFooter>
-          </Card>
-        </motion.div>
-      </div>
-    </>
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-500" /> : <Eye className="h-5 w-5 text-gray-500" />}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workUnit">Unit Kerja</Label>
+              <Select onValueChange={(value) => setFormData({ ...formData, workUnit: value })} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih unit kerja" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workUnits.map((unit) => (
+                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                      {unit.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Peran</Label>
+              <Select onValueChange={(value) => setFormData({ ...formData, role: value })} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih peran" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="management">Management</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="pdo">PDO</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : 'Daftar'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
-}
+};
 
 export default RegistrationPage;

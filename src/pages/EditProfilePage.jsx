@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -17,7 +18,8 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
+import api from '@/lib/api'; 
 
 const workUnitOptions = [
   'SBU',
@@ -32,48 +34,15 @@ const workUnitOptions = [
 function EditProfilePage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({ name: user?.name || '' });
-  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+  });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
   const [newUnit, setNewUnit] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  // Load profile dari API saat mount
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const saved = JSON.parse(localStorage.getItem('sakti_auth'));
-        const token = saved?.token;
-
-        const res = await fetch('https://api-sakti-production.up.railway.app/api/auth/profile', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        const data = await res.json();
-        if (data.user) {
-          updateUser({
-            id: data.user.id,
-            email: data.user.email,
-            role: data.user.role,
-            unit_kerja: data.user.unit_kerja,
-            name: data.user.full_name,
-          });
-          setFormData({ name: data.user.full_name });
-        }
-      } catch (error) {
-        toast({
-          title: "Gagal Memuat Profil",
-          description: "Silakan refresh halaman atau login ulang.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [updateUser, toast]);
 
   const handleInfoChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -94,6 +63,18 @@ function EditProfilePage() {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
+
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    if (!strongPasswordRegex.test(passwordData.newPassword)) {
+      toast({
+        title: "Password Lemah",
+        description: "Gunakan minimal 8 karakter dengan huruf besar, kecil, angka, dan simbol.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: "Password Tidak Cocok",
@@ -104,44 +85,28 @@ function EditProfilePage() {
     }
 
     try {
-      const saved = JSON.parse(localStorage.getItem('sakti_auth'));
-      const token = saved?.token;
-
-      const res = await fetch('https://api-sakti-production.up.railway.app/api/auth/updatePassword', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          current_password: passwordData.currentPassword,
-          new_password: passwordData.newPassword
-        })
+      const response = await api.put('/auth/update-password', {
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+        confirm_password: passwordData.confirmPassword
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast({
-          title: "Gagal Mengubah Password",
-          description: data.message || "Silakan coba lagi.",
-          variant: "destructive",
-        });
-        return;
-      }
 
       toast({
-        title: "Password Diubah",
-        description: data.message,
+        title: "Password Diubah!",
+        description: response.data.message || "Password berhasil diubah.",
       });
 
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
     } catch (error) {
+      const message = error.response?.data?.message || "Gagal memperbarui password. Coba lagi.";
       toast({
-        title: "Terjadi Kesalahan",
-        description: "Gagal mengubah password. Silakan coba lagi.",
-        variant: "destructive"
+        title: "Gagal Mengubah Password",
+        description: message,
+        variant: "destructive",
       });
     }
   };
@@ -158,8 +123,6 @@ function EditProfilePage() {
     setNewUnit('');
   };
 
-  if (loading) return <p>Memuat data profil...</p>;
-
   return (
     <>
       <Helmet>
@@ -174,7 +137,6 @@ function EditProfilePage() {
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Profil Info Form */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
             <Card className="border-0 shadow-lg">
               <CardHeader><CardTitle>Informasi Profil</CardTitle></CardHeader>
@@ -182,7 +144,7 @@ function EditProfilePage() {
                 <form onSubmit={handleInfoSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="name">Nama Lengkap</Label>
-                    <Input id="name" value={formData.name} onChange={handleInfoChange} />
+                    <Input id="name" value={user?.full_name} disabled />
                   </div>
                   <div>
                     <Label htmlFor="email">Email</Label>
@@ -197,10 +159,9 @@ function EditProfilePage() {
                     <Input id="role" value={user?.role || ''} disabled />
                   </div>
                   <div className="flex space-x-2">
-                    <Button type="submit" style={{ backgroundColor: '#000476' }}>Simpan Perubahan</Button>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button type="button" variant="outline">Request Ganti Unit</Button>
+                        <Button type="button" style={{ backgroundColor: '#000476' }}>Request Ganti Unit</Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px]">
                         <DialogHeader>
@@ -211,7 +172,9 @@ function EditProfilePage() {
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                           <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="newUnit" className="text-right">Unit Baru</Label>
+                            <Label htmlFor="newUnit" className="text-right">
+                              Unit Baru
+                            </Label>
                             <div className="col-span-3">
                               <Select onValueChange={setNewUnit}>
                                 <SelectTrigger><SelectValue placeholder="Pilih unit..." /></SelectTrigger>
@@ -238,7 +201,6 @@ function EditProfilePage() {
             </Card>
           </motion.div>
 
-          {/* Ganti Password */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
             <Card className="border-0 shadow-lg">
               <CardHeader><CardTitle>Ubah Password</CardTitle></CardHeader>

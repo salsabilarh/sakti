@@ -1,42 +1,16 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Download, Building, Youtube, Star, BarChart, Paperclip, FileText, ChevronRight, ExternalLink } from 'lucide-react';
+import {
+  ArrowLeft, Download, Building, Youtube, Star, BarChart,
+  Paperclip, FileText, ChevronRight, ExternalLink
+} from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import DownloadFormModal from '@/components/DownloadFormModal.jsx';
-
-const mockServiceDetails = {
-  1: {
-    id: 1,
-    name: 'Konsultasi Strategi Digital',
-    category: 'Konsultasi',
-    code: 'KSD-001',
-    portfolio: 'Digital Transformation',
-    sbu_owner: 'Unit Teknologi Strategis',
-    description: 'Layanan konsultasi komprehensif untuk transformasi digital perusahaan yang mencakup analisis kebutuhan, perencanaan strategis, dan implementasi solusi digital.',
-    benefits: ['Meningkatkan efisiensi operasional', 'Membuka peluang pasar baru', 'Meningkatkan daya saing perusahaan', 'Optimalisasi penggunaan teknologi'],
-    output: ['Laporan Asesmen Kematangan Digital', 'Roadmap Transformasi Digital', 'Rekomendasi Arsitektur Teknologi', 'Laporan Implementasi & Evaluasi'],
-    scope: "Analisis Proses Bisnis, Pemetaan Journey Pelanggan, Evaluasi Infrastruktur TI, Penyusunan Strategi & Roadmap, Pengawasan Implementasi.",
-    video_url: 'https://www.linkedin.com/learning/paths/become-a-digital-transformation-leader',
-    regulations: [
-      { name: "UU No. 19 Tahun 2016", source: "ITE" },
-      { name: "Peraturan OJK No. 38/POJK.03/2016", source: "Perbankan Digital" }
-    ],
-    marketingKit: [
-      { name: 'Brochure Konsultasi Digital.pdf', type: 'Flyer', size: '2.3 MB', fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }, 
-      { name: 'Case Study Transformasi.pdf', type: 'Case Study', size: '1.8 MB', fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
-    ]
-  },
-  2: { id: 2, name: 'Audit Keamanan Siber', description: 'Deskripsi layanan audit keamanan siber.'},
-  3: { id: 3, name: 'Pengembangan Aplikasi Mobile', description: 'Deskripsi layanan pengembangan aplikasi mobile.', benefits: ['Jangkauan pelanggan lebih luas', 'Peningkatan engagement'] },
-  4: { id: 4, name: 'Analisis Data Bisnis', description: 'Deskripsi layanan analisis data bisnis.'},
-  5: { id: 5, name: 'Implementasi Cloud Infrastructure', description: 'Deskripsi layanan implementasi cloud.'},
-  6: { id: 6, name: 'Training Digital Marketing', description: 'Deskripsi layanan training digital marketing.', video_url: 'https://www.linkedin.com/learning/paths/become-a-digital-marketing-specialist' }
-};
+import { useAuth } from '@/contexts/AuthContext.jsx'; // untuk token auth jika dibutuhkan
 
 const DetailCard = ({ icon, title, children, delay }) => (
   <motion.div
@@ -58,7 +32,9 @@ const DetailCard = ({ icon, title, children, delay }) => (
 
 function DetailService() {
   const { id } = useParams();
-  const service = mockServiceDetails[id];
+  const { authToken } = useAuth(); // ambil token jika diperlukan
+  const [service, setService] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showDownloadForm, setShowDownloadForm] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -66,6 +42,28 @@ function DetailService() {
     setSelectedFile(file);
     setShowDownloadForm(true);
   };
+
+  useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        const res = await fetch(`https://api-sakti-production.up.railway.app/api/services/${id}`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        });
+        if (!res.ok) throw new Error('Gagal mengambil detail layanan');
+        const data = await res.json();
+        setService(data.service);
+      } catch (err) {
+        console.error(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (authToken) fetchDetail();
+  }, [id, authToken]);
+
+  if (loading) return <p className="text-center py-10">Memuat data layanan...</p>;
 
   if (!service) {
     return (
@@ -77,6 +75,9 @@ function DetailService() {
       </div>
     );
   }
+
+  const benefitList = service.benefit?.split('\n') || [];
+  const outputList = service.output?.split('\n') || [];
 
   return (
     <>
@@ -99,45 +100,45 @@ function DetailService() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center space-x-3 mb-4">
-                {service.category && <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{service.category}</Badge>}
+                {service.group && <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{service.group}</Badge>}
                 {service.code && <code className="bg-white/20 px-3 py-1 rounded text-sm font-mono">{service.code}</code>}
               </div>
               <h1 className="text-3xl font-bold mb-3">{service.name}</h1>
-              <p className="text-blue-100 text-lg mb-4">{service.description}</p>
-              {service.sbu_owner && (
+              <p className="text-blue-100 text-lg mb-4">{service.overview}</p>
+              {service.sbu_owner?.name && (
                 <div className="flex flex-wrap gap-4 text-sm">
                   <div className="flex items-center space-x-2">
                     <Building className="w-4 h-4" />
-                    <span>SBU Owner: {service.sbu_owner}</span>
+                    <span>SBU Owner: {service.sbu_owner.name}</span>
                   </div>
                 </div>
               )}
             </div>
           </div>
         </motion.div>
-        
+
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {service.benefits && (
+            {benefitList.length > 0 && (
               <DetailCard icon={<Star className="w-5 h-5" />} title="Manfaat Layanan" delay={0.1}>
                 <ul className="space-y-3">
-                  {service.benefits.map((item, index) => (
+                  {benefitList.map((item, index) => (
                     <li key={index} className="flex items-start space-x-3">
                       <ChevronRight className="w-4 h-4 text-[#000476] mt-1 flex-shrink-0" />
-                      <span className="text-gray-700">{item}</span>
+                      <span className="text-gray-700">{item.trim()}</span>
                     </li>
                   ))}
                 </ul>
               </DetailCard>
             )}
 
-            {service.output && (
+            {outputList.length > 0 && (
               <DetailCard icon={<BarChart className="w-5 h-5" />} title="Output Layanan" delay={0.2}>
                 <ul className="space-y-3">
-                  {service.output.map((item, index) => (
+                  {outputList.map((item, index) => (
                     <li key={index} className="flex items-start space-x-3">
                       <ChevronRight className="w-4 h-4 text-[#000476] mt-1 flex-shrink-0" />
-                      <span className="text-gray-700">{item}</span>
+                      <span className="text-gray-700">{item.trim()}</span>
                     </li>
                   ))}
                 </ul>
@@ -145,16 +146,16 @@ function DetailService() {
             )}
 
             {service.scope && (
-               <DetailCard icon={<Paperclip className="w-5 h-5" />} title="Ruang Lingkup" delay={0.3}>
-                  <p className="text-gray-700">{service.scope}</p>
+              <DetailCard icon={<Paperclip className="w-5 h-5" />} title="Ruang Lingkup" delay={0.3}>
+                <p className="text-gray-700">{service.scope}</p>
               </DetailCard>
             )}
           </div>
 
           <div className="space-y-6">
-            {service.video_url && (
+            {service.intro_video_url && (
               <DetailCard icon={<Youtube className="w-5 h-5 text-red-600" />} title="Introduction Module" delay={0.4}>
-                <a href={service.video_url} target="_blank" rel="noopener noreferrer">
+                <a href={service.intro_video_url} target="_blank" rel="noopener noreferrer">
                   <Button className="w-full" style={{ backgroundColor: '#000476' }}>
                     <ExternalLink className="w-4 h-4 mr-2" />
                     View Learning Module
@@ -163,28 +164,21 @@ function DetailService() {
               </DetailCard>
             )}
 
-            {service.regulations && (
+            {service.regulation_ref && (
               <DetailCard icon={<FileText className="w-5 h-5" />} title="Regulasi Terkait" delay={0.5}>
-                 <ul className="space-y-2">
-                    {service.regulations.map((reg, index) => (
-                      <li key={index} className="text-sm text-gray-700">
-                        <span className="font-semibold">{reg.name}</span> - <span className="text-gray-500">{reg.source}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <p className="text-sm text-gray-700">{service.regulation_ref}</p>
               </DetailCard>
             )}
 
-            {service.marketingKit && service.marketingKit.length > 0 && (
+            {service.marketing_kits && service.marketing_kits.length > 0 && (
               <DetailCard icon={<Download className="w-5 h-5" />} title="Marketing Kit" delay={0.6}>
-                <div className="space-y-3">
-                  <table className="w-full text-sm">
-                    <tbody>
-                    {service.marketingKit.map((file, index) => (
+                <table className="w-full text-sm">
+                  <tbody>
+                    {service.marketing_kits.map((file, index) => (
                       <tr key={index} className="border-b last:border-b-0">
                         <td className="py-2 pr-2">
                           <p className="font-medium text-gray-800">{file.name}</p>
-                          <p className="text-gray-500">{file.type}</p>
+                          <p className="text-gray-500">{file.file_type}</p>
                         </td>
                         <td className="py-2 pl-2 text-right">
                           <Button size="sm" onClick={() => handleDownloadClick(file)} style={{ backgroundColor: '#000476' }}>
@@ -193,15 +187,14 @@ function DetailService() {
                         </td>
                       </tr>
                     ))}
-                    </tbody>
-                  </table>
-                </div>
+                  </tbody>
+                </table>
               </DetailCard>
             )}
           </div>
         </div>
       </div>
-      
+
       {showDownloadForm && <DownloadFormModal file={selectedFile} onClose={() => setShowDownloadForm(false)} />}
     </>
   );

@@ -43,19 +43,11 @@ function Dashboard() {
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div className="lg:pl-24">
               <h1 className="text-3xl font-bold mb-2">
-                Selamat Datang, {user?.name}
+                Selamat Datang, {user?.full_name}
               </h1>
               <p className="text-blue-100 text-lg mb-6">
                 Jelajahi layanan dan dokumentasi dengan mudah melalui platform SAKTI
               </p>
-              <div className="flex flex-wrap gap-4">
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                  <span className="text-sm font-medium">📊 Katalog Layanan</span>
-                </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                  <span className="text-sm font-medium">🚀 Manajemen Dokumen</span>
-                </div>
-              </div>
             </div>
             <div className="hidden lg:flex justify-center">
               <img  class="w-full max-w-md" alt="Dashboard illustration showing teamwork and exploration" src="https://images.unsplash.com/photo-1531497258014-b5736f376b1b" />

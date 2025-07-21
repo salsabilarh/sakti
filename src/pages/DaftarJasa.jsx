@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -15,75 +15,52 @@ import {
   TableRow,
 } from '@/components/ui/table.jsx';
 
-const mockServices = [
-  {
-    id: 1,
-    name: 'Konsultasi Strategi Digital',
-    code: 'KSD-001',
-    subPortfolio: 'Strategy',
-    portfolio: 'Digital Transformation',
-    sector: 'Teknologi Informasi'
-  },
-  {
-    id: 2,
-    name: 'Audit Keamanan Siber',
-    code: 'AKS-002',
-    subPortfolio: 'Security Audit',
-    portfolio: 'Cybersecurity',
-    sector: 'Perbankan'
-  },
-  {
-    id: 3,
-    name: 'Pengembangan Aplikasi Mobile',
-    code: 'PAM-003',
-    subPortfolio: 'Native Development',
-    portfolio: 'Mobile Solutions',
-    sector: 'Retail'
-  },
-  {
-    id: 4,
-    name: 'Analisis Data Bisnis',
-    code: 'ADB-004',
-    subPortfolio: 'Data Science',
-    portfolio: 'Business Intelligence',
-    sector: 'Manufaktur'
-  },
-  {
-    id: 5,
-    name: 'Implementasi Cloud Infrastructure',
-    code: 'ICI-005',
-    subPortfolio: 'Cloud Migration',
-    portfolio: 'Cloud Services',
-    sector: 'Teknologi Informasi'
-  },
-  {
-    id: 6,
-    name: 'Training Digital Marketing',
-    code: 'TDM-006',
-    subPortfolio: 'SEO & SEM',
-    portfolio: 'Digital Marketing',
-    sector: 'Pendidikan'
-  }
-];
-
-const portfolios = [...new Set(mockServices.map(service => service.portfolio))];
-const sectors = [...new Set(mockServices.map(service => service.sector))];
+import { useAuth } from '@/contexts/AuthContext.jsx';
 
 function DaftarJasa() {
+  const { authToken } = useAuth(); // ✅ Ambil token dari context
+  const [services, setServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPortfolio, setSelectedPortfolio] = useState('');
   const [selectedSector, setSelectedSector] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const filteredServices = useMemo(() => {
-    return mockServices.filter(service => {
-      const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           service.code.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesPortfolio = !selectedPortfolio || service.portfolio === selectedPortfolio;
-      const matchesSector = !selectedSector || service.sector === selectedSector;
-      
-      return matchesSearch && matchesPortfolio && matchesSector;
-    });
-  }, [searchTerm, selectedPortfolio, selectedSector]);
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchTerm) params.append('search', searchTerm);
+        if (selectedPortfolio) params.append('portfolio', selectedPortfolio);
+        if (selectedSector) params.append('sector', selectedSector);
+
+        const res = await fetch(`https://api-sakti-production.up.railway.app/api/services?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${authToken}`, // ✅ Kirim token di header
+          },
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData?.error || 'Gagal mengambil data layanan');
+        }
+
+        const data = await res.json();
+        setServices(data.services || []);
+      } catch (error) {
+        console.error('Gagal mengambil data layanan:', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (authToken) {
+      fetchServices(); // ✅ Hanya fetch jika token tersedia
+    }
+  }, [searchTerm, selectedPortfolio, selectedSector, authToken]);
+
+  const portfolios = useMemo(() => [...new Set(services.map(s => s.portfolio).filter(Boolean))], [services]);
+  const sectors = useMemo(() => [...new Set(services.flatMap(s => s.sectors).filter(Boolean))], [services]);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -99,22 +76,12 @@ function DaftarJasa() {
       </Helmet>
 
       <div className="space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Daftar Jasa</h1>
-          <p className="text-gray-600">
-            Jelajahi katalog layanan lengkap dengan informasi detail dan dokumentasi
-          </p>
+          <p className="text-gray-600">Jelajahi katalog layanan lengkap dengan informasi detail dan dokumentasi</p>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -132,12 +99,10 @@ function DaftarJasa() {
                   className="pl-10"
                 />
               </div>
-              
+
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Portfolio
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Portfolio</label>
                   <select
                     value={selectedPortfolio}
                     onChange={(e) => setSelectedPortfolio(e.target.value)}
@@ -149,11 +114,9 @@ function DaftarJasa() {
                     ))}
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nama Sektor
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nama Sektor</label>
                   <select
                     value={selectedSector}
                     onChange={(e) => setSelectedSector(e.target.value)}
@@ -165,13 +128,9 @@ function DaftarJasa() {
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="flex items-end">
-                  <Button
-                    variant="outline"
-                    onClick={clearFilters}
-                    className="w-full"
-                  >
+                  <Button variant="outline" onClick={clearFilters} className="w-full">
                     Reset Filter
                   </Button>
                 </div>
@@ -180,22 +139,15 @@ function DaftarJasa() {
           </Card>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex items-center justify-between"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex items-center justify-between">
           <p className="text-gray-600">
-            Menampilkan {filteredServices.length} dari {mockServices.length} layanan
+            {loading
+              ? 'Memuat layanan...'
+              : `Menampilkan ${services.length} layanan`}
           </p>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
           <Card className="border-0 shadow-lg">
             <CardContent className="p-0">
               <Table>
@@ -210,7 +162,7 @@ function DaftarJasa() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredServices.map((service, index) => (
+                  {services.map((service, index) => (
                     <motion.tr
                       key={service.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -220,13 +172,11 @@ function DaftarJasa() {
                     >
                       <TableCell className="font-medium text-gray-900">{service.name}</TableCell>
                       <TableCell>
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                          {service.code}
-                        </code>
+                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">{service.code}</code>
                       </TableCell>
-                      <TableCell>{service.subPortfolio}</TableCell>
-                      <TableCell>{service.portfolio}</TableCell>
-                      <TableCell>{service.sector}</TableCell>
+                      <TableCell>{service.subPortfolio || '-'}</TableCell>
+                      <TableCell>{service.portfolio || '-'}</TableCell>
+                      <TableCell>{(service.sectors || []).join(', ') || '-'}</TableCell>
                       <TableCell className="text-center">
                         <Link to={`/service/${service.id}`}>
                           <Button variant="outline" size="sm">
@@ -239,8 +189,8 @@ function DaftarJasa() {
                   ))}
                 </TableBody>
               </Table>
-              
-              {filteredServices.length === 0 && (
+
+              {!loading && services.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-gray-500">Tidak ada layanan yang ditemukan</p>
                   <Button variant="outline" onClick={clearFilters} className="mt-4">

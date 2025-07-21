@@ -1,15 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, UserCheck, UserX, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
+import api from '@/lib/api';
+import { toast } from '@/components/ui/use-toast';
 
-function AdminStats({ usersCount, pendingUsersCount, activeUsersCount, logsCount }) {
-  const stats = [
-    { label: 'Total Users', value: usersCount, icon: Users },
-    { label: 'Total Pending Users', value: pendingUsersCount, icon: UserCheck },
-    { label: 'Active Logged-In Users', value: activeUsersCount, icon: UserX },
-    { label: 'Total Downloads', value: logsCount, icon: Download }
-  ];
+function AdminStats() {
+  const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await api.get('/admin/dashboard', {
+          headers: {
+            Authorization: `Bearer ${user?.token}`,
+          },
+        });
+        setStats(response.data.stats);
+      } catch (error) {
+        toast({
+          title: 'Gagal memuat statistik',
+          description: error.response?.data?.message || 'Terjadi kesalahan saat memuat data dashboard.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [user?.token]);
+
+  const statsList = stats
+    ? [
+        { label: 'Total Users', value: stats.total_users, icon: Users },
+        { label: 'Total Pending Users', value: stats.total_waiting_users, icon: UserCheck },
+        { label: 'Active Logged-In Users', value: stats.total_active_users, icon: UserX },
+        { label: 'Total Downloads', value: stats.total_downloads, icon: Download },
+      ]
+    : [];
+
+  if (loading) {
+    return (
+      <div className="text-center text-gray-600 font-medium mt-8">Memuat data statistik...</div>
+    );
+  }
 
   return (
     <motion.div
@@ -18,7 +56,7 @@ function AdminStats({ usersCount, pendingUsersCount, activeUsersCount, logsCount
       transition={{ duration: 0.5, delay: 0.1 }}
       className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
     >
-      {stats.map((stat, index) => (
+      {statsList.map((stat, index) => (
         <Card key={index} className="border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">

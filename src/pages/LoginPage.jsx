@@ -8,11 +8,14 @@ import { Label } from '@/components/ui/label.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useToast } from '@/components/ui/use-toast.js';
+import { Eye, EyeOff } from 'lucide-react';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,7 +34,9 @@ function LoginPage() {
     setLoading(true);
 
     try {
+      // Asumsikan login adalah async dan mengembalikan response API seperti backend yang kamu tunjukkan
       const result = await login(email, password);
+
       if (result.success) {
         toast({
           title: "Login berhasil!",
@@ -39,16 +44,17 @@ function LoginPage() {
         });
         navigate(from, { replace: true });
       } else {
+        // Tampilkan pesan error backend jika ada, fallback ke pesan default
         toast({
           title: "Login gagal",
-          description: result.error || "Email atau password salah",
+          description: result.message || result.error || "Email atau password salah",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Terjadi kesalahan",
-        description: "Silakan coba lagi",
+        description: error.message || "Silakan coba lagi",
         variant: "destructive",
       });
     } finally {
@@ -60,8 +66,9 @@ function LoginPage() {
     <>
       <Helmet>
         <title>Login - SAKTI Platform</title>
+        <meta name="description" content="Login to SAKTI - Service Knowledge Platform for integrated analytics and catalog management" />
       </Helmet>
-
+      
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
           <motion.div
@@ -97,25 +104,35 @@ function LoginPage() {
                       className="h-11"
                     />
                   </div>
-
-                  <div className="space-y-2">
+                  
+                  <div className="space-y-2 relative">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
                       <Link to="/forgot-password" className="text-sm text-[#000476] hover:underline">
                         Lupa Password?
                       </Link>
                     </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Masukkan password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="h-11"
-                    />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Masukkan password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="h-11 pr-10"
+                        />
+                        <div
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 cursor-pointer text-gray-500"
+                          style={{ transform: 'translateY(-50%)' }}
+                          aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </div>
+                      </div>
                   </div>
-
+                  
                   <Button
                     type="submit"
                     className="w-full h-11 text-white font-medium"
@@ -125,6 +142,12 @@ function LoginPage() {
                     {loading ? 'Memproses...' : 'Login'}
                   </Button>
                 </form>
+                
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-2">Demo credentials:</p>
+                  <p className="text-xs text-gray-500">User: any email + password</p>
+                  <p className="text-xs text-gray-500">Admin: admin@sakti.com + any password</p>
+                </div>
               </CardContent>
               <CardFooter className="flex-col items-start">
                 <p className="text-sm text-gray-600">
