@@ -128,10 +128,6 @@ function UsersManagement() {
     }
   };
 
-  const handleResetPassword = async (user) => {
-    toast({ title: "Reset Password", description: `Password untuk ${user.name} telah direset ke "Sakti@2024".` });
-  };
-
   const handleDeleteUser = async (userToDelete) => {
     try {
       await api.delete(`/api/admin/users/${userToDelete.id}`);
@@ -218,19 +214,6 @@ function UsersManagement() {
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button size="sm" variant="outline" onClick={() => handleEditClick(user)}><Edit className="w-4 h-4" /></Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild><Button size="sm" variant="outline"><KeyRound className="w-4 h-4" /></Button></AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Reset Password?</AlertDialogTitle>
-                                <AlertDialogDescription>Reset password untuk {user.name} ke default "Sakti@2024"?</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleResetPassword(user)}>Reset</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button size="sm" variant="destructive"><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
                             <AlertDialogContent>

@@ -28,7 +28,7 @@ function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center space-x-2">
               <User className="w-5 h-5" />
-              <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+              <span className="text-sm font-medium text-gray-700">{user?.full_name}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -36,7 +36,7 @@ function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/edit-profile')}>
               <Settings className="mr-2 h-4 w-4" />
-              <span>Edit Profile</span>
+              <span>Profile</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>

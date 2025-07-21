@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Users, UserCheck, Upload, Plus, Download, GitPullRequest } from 'lucide-react';
+import { Users, UserCheck, Upload, Plus, Download, GitPullRequest, Key } from 'lucide-react';
 import { useAuth, ROLES } from '@/contexts/AuthContext.jsx';
 import AdminStats from '@/components/admin/AdminStats.jsx';
 import UsersManagement from '@/components/admin/UsersManagement.jsx';
 import WaitingUsers from '@/components/admin/WaitingUsers.jsx';
 import DownloadLogs from '@/components/admin/DownloadLogs.jsx';
-import { mockUsers, mockDownloadLogs, mockWaitingUsers } from '@/components/admin/mockData.js';
 import UnitChangeRequests from '@/components/admin/UnitChangeRequests.jsx';
-import UploadFile from '@/components/admin/UploadFile.jsx';
-import AddService from '@/components/admin/AddService.jsx';
+import PasswordResetRequests from '@/components/admin/PasswordResetRequests.jsx';
 
 const AdminPanel = () => {
   const { user } = useAuth();
@@ -20,8 +18,7 @@ const AdminPanel = () => {
     { id: 'users', label: 'Management User', icon: Users, component: UsersManagement },
     { id: 'waiting', label: 'Pending Users', icon: UserCheck, component: WaitingUsers },
     { id: 'unitChange', label: 'Pending Unit Change', icon: GitPullRequest, component: UnitChangeRequests },
-    // { id: 'upload', label: 'Upload File', icon: Upload, component: UploadFile },
-    // { id: 'services', label: 'Tambah Layanan', icon: Plus, component: AddService },
+    { id: 'resetPassword', label: 'Reset Password Requests', icon: Key, component: PasswordResetRequests },
     { id: 'logs', label: 'Log Download', icon: Download, component: DownloadLogs },
   ];
 
@@ -61,10 +58,10 @@ const AdminPanel = () => {
         </motion.div>
 
         <AdminStats 
-          usersCount={mockUsers.length} 
-          pendingUsersCount={mockWaitingUsers.length}
-          activeUsersCount={mockUsers.filter(u => u.status === 'Active').length}
-          logsCount={mockDownloadLogs.length} 
+          usersCount={0} // Update jika tersedia data asli
+          pendingUsersCount={0}
+          activeUsersCount={0}
+          logsCount={0} 
         />
 
         <motion.div
@@ -101,6 +98,6 @@ const AdminPanel = () => {
       </div>
     </>
   );
-}
+};
 
 export default AdminPanel;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserCheck, UserX, Download } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, Repeat, KeyRound, Activity, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
@@ -36,11 +36,12 @@ function AdminStats() {
 
   const statsList = stats
     ? [
-        { label: 'Total Users', value: stats.total_users, icon: Users },
-        { label: 'Total Pending Users', value: stats.total_waiting_users, icon: UserCheck },
-        { label: 'Total Pending Request Unit Change', value: stats.total_pending_unit_change_requests, icon: UserCheck },
-        { label: 'Active Logged-In Users', value: stats.total_active_users, icon: UserX },
-        { label: 'Total Downloads', value: stats.total_downloads, icon: Download },
+        { label: 'Total Users', value: stats.total_users, icon: Users }, // 👥 Umum
+        { label: 'Total Pending Users', value: stats.total_waiting_users, icon: Clock }, // ⏳ Menunggu verifikasi
+        { label: 'Total Pending Request Unit Change', value: stats.total_pending_unit_change_requests, icon: Repeat }, // 🔁 Pergantian unit
+        { label: 'Total Password Reset Request', value: stats.total_password_reset_requests, icon: KeyRound }, // 🔑 Reset password
+        { label: 'Active Logged-In Users', value: stats.total_active_users, icon: Activity }, // 📶 User aktif
+        { label: 'Total Downloads', value: stats.total_downloads, icon: Download }, // 📥 Download
       ]
     : [];
 

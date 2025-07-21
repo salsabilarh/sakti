@@ -143,11 +143,6 @@ function LoginPage() {
                   </Button>
                 </form>
                 
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600 mb-2">Demo credentials:</p>
-                  <p className="text-xs text-gray-500">User: any email + password</p>
-                  <p className="text-xs text-gray-500">Admin: admin@sakti.com + any password</p>
-                </div>
               </CardContent>
               <CardFooter className="flex-col items-start">
                 <p className="text-sm text-gray-600">

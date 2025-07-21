@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
@@ -9,6 +8,7 @@ import { Label } from '@/components/ui/label.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card.jsx';
 import { useToast } from '@/components/ui/use-toast.js';
 import { Zap } from 'lucide-react';
+import axios from 'axios';
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -18,17 +18,45 @@ function ForgotPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!email) {
+      toast({
+        title: 'Email diperlukan',
+        description: 'Silakan masukkan email Anda terlebih dahulu.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
 
-    // Mock password reset logic
-    setTimeout(() => {
-      toast({
-        title: "Link Reset Terkirim",
-        description: `Jika email ${email} terdaftar, kami telah mengirimkan link untuk reset password.`,
+    try {
+      const response = await axios.post('https://api-sakti-production.up.railway.app/api/auth/forgot-password', {
+        email,
       });
+
+      toast({
+        title: 'Berhasil',
+        description: response.data.message || 'Permintaan reset password telah dikirim.',
+      });
+
+      // Redirect ke login setelah beberapa detik
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    } catch (error) {
+      const errMsg =
+        error?.response?.data?.error ||
+        'Terjadi kesalahan saat mengirim permintaan reset password.';
+
+      toast({
+        title: 'Gagal',
+        description: errMsg,
+        variant: 'destructive',
+      });
+    } finally {
       setLoading(false);
-      navigate('/login');
-    }, 1500);
+    }
   };
 
   return (
@@ -37,7 +65,7 @@ function ForgotPasswordPage() {
         <title>Lupa Password - SAKTI Platform</title>
         <meta name="description" content="Reset your password for SAKTI Platform" />
       </Helmet>
-      
+
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: -50 }}
@@ -80,7 +108,7 @@ function ForgotPasswordPage() {
                     required
                   />
                 </div>
-                
+
                 <Button
                   type="submit"
                   className="w-full h-11 text-white font-medium"

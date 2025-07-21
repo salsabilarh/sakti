@@ -2,12 +2,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Home, 
-  List, 
-  Download, 
-  Settings,
-} from 'lucide-react';
+import { LayoutDashboard, Briefcase, FolderDown, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth, ROLES } from '@/contexts/AuthContext';
 
@@ -19,10 +14,10 @@ const navConfig = {
 };
 
 const allNavigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Daftar Jasa', href: '/daftar-jasa', icon: List },
-  { name: 'Marketing Kit', href: '/marketing-kit', icon: Download },
-  { name: 'Admin Panel', href: '/admin', icon: Settings },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Daftar Jasa', href: '/daftar-jasa', icon: Briefcase },
+  { name: 'Marketing Kit', href: '/marketing-kit', icon: FolderDown },
+  { name: 'Admin Panel', href: '/admin', icon: ShieldCheck },
 ];
 
 function Sidebar() {
@@ -62,10 +57,12 @@ function Sidebar() {
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
               )}
-              <item.icon className={cn(
-                'w-5 h-5 relative z-10',
-                isActive ? 'text-[#000476]' : 'text-gray-400'
-              )} />
+              <item.icon
+                className={cn(
+                  'w-5 h-5 relative z-10',
+                  isActive ? 'text-[#000476]' : 'text-gray-400 group-hover:text-[#000476]'
+                )}
+              />
               <span className="relative z-10">{item.name}</span>
             </Link>
           );
