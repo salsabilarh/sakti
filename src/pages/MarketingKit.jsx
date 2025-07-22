@@ -36,7 +36,8 @@ function MarketingKit() {
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState([]);
   const { user, authToken } = useAuth();
-  const { toast } = useToast(); // toast
+  const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const canAccess = user && user.role !== ROLES.VIEWER;
   const isAdmin = user && user.role === ROLES.ADMIN;
@@ -170,23 +171,26 @@ function MarketingKit() {
             <p className="text-gray-600">Unduh materi pemasaran, brosur, dan dokumentasi untuk layanan kami</p>
           </div>
           {isAdmin && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button style={{ backgroundColor: '#000476' }}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload File
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[625px]">
-                <DialogHeader>
-                  <DialogTitle>Upload File Baru</DialogTitle>
-                  <DialogDescription>Tambahkan file marketing baru ke dalam sistem.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                  <UploadFile />
-                </div>
-              </DialogContent>
-            </Dialog>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button style={{ backgroundColor: '#000476' }}>
+                <Upload className="w-4 h-4 mr-2" />
+                Upload File
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[625px]">
+              <DialogHeader>
+                <DialogTitle>Upload File Baru</DialogTitle>
+                <DialogDescription>Tambahkan file marketing baru ke dalam sistem.</DialogDescription>
+              </DialogHeader>
+              <UploadFile
+                onUploadSuccess={() => {
+                  fetchMarketingKits();
+                  setDialogOpen(false);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
           )}
         </motion.div>
 
