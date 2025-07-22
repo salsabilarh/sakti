@@ -12,8 +12,8 @@ import DetailService from '@/pages/DetailService.jsx';
 import MarketingKit from '@/pages/MarketingKit.jsx';
 import AdminPanel from '@/pages/AdminPanel.jsx';
 import EditProfilePage from '@/pages/EditProfilePage.jsx';
-import EditService from '@/pages/EditService.jsx';
-import AddService from './pages/AddService.jsx';
+import TambahJasa from './pages/TambahJasa.jsx';
+import EditJasa from './pages/EditJasa.jsx';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -67,7 +67,7 @@ function AppRoutes() {
       <Route path="/tambah-jasa" element={
         <ProtectedRoute>
           <DashboardLayout>
-            <AddService />
+            <TambahJasa />
           </DashboardLayout>
         </ProtectedRoute>
       } />
@@ -81,7 +81,7 @@ function AppRoutes() {
       <Route path="/edit-service/:id" element={
         <ProtectedRoute>
           <DashboardLayout>
-            <EditService />
+            <EditJasa />
           </DashboardLayout>
         </ProtectedRoute>
       } />

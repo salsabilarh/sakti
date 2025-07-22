@@ -5,7 +5,7 @@ module.exports = {
 		'./pages/**/*.{js,jsx}',
 		'./components/**/*.{js,jsx}',
 		'./app/**/*.{js,jsx}',
-		'./src/**/*.{js,jsx}',
+		'./src/**/*.{js,jsx,ts,tsx}',
 	],
 	theme: {
 		container: {
@@ -72,5 +72,8 @@ module.exports = {
 			},
 		},
 	},
-	plugins: [require('tailwindcss-animate')],
+	plugins: [
+		require('tailwindcss-animate'),
+		require('@tailwindcss/aspect-ratio'),
+	],
 };

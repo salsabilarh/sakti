@@ -264,7 +264,7 @@ function DaftarJasa() {
                               Detail
                             </Button>
                           </Link>
-                          <Link to={`/service/${service.id}/edit`}>
+                          <Link to={`/edit-service/${service.id}`}>
                             <Button variant="outline" size="sm" className="text-blue-600 border-blue-600">
                               Edit
                             </Button>
