@@ -39,7 +39,8 @@ function UploadFile() {
     const formData = new FormData();
     formData.append('file', uploadFile);
     formData.append('file_type', fileType);
-    formData.append('service_id', serviceName); // asumsi serviceName adalah ID (value)
+    formData.append('service_id', serviceName);
+    formData.append('name', uploadFile.name);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/marketing-kit`, {

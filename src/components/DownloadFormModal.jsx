@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button.jsx';
@@ -8,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
 function DownloadFormModal({ file, onClose }) {
-  const { user } = useAuth();
+  const { user, authToken } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -16,18 +15,10 @@ function DownloadFormModal({ file, onClose }) {
     purpose: ''
   });
 
-  const triggerDownload = (url, fileName) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleDownloadSubmit = (e) => {
+  const handleDownloadSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.purpose) {
+
+    if (!formData.email || !formData.purpose) {
       toast({
         title: "Form tidak lengkap",
         description: "Mohon lengkapi semua field yang diperlukan",
@@ -36,20 +27,43 @@ function DownloadFormModal({ file, onClose }) {
       return;
     }
 
-    console.log("Download log:", {
-      ...formData,
-      fileName: file.fileName || file.name,
-      downloadTimestamp: new Date().toISOString()
-    });
+    try {
+      const response = await fetch(
+        `https://api-sakti-production.up.railway.app/api/marketing-kits/${file.id}/download`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ purpose: formData.purpose }),
+          redirect: 'follow' // Opsional, defaultnya sudah follow
+        }
+      );
 
-    toast({
-      title: "Download Dimulai",
-      description: `File ${file.fileName || file.name} sedang diunduh.`,
-    });
+      if (!response.ok && response.status !== 302) {
+        throw new Error('Gagal memproses permintaan download');
+      }
 
-    triggerDownload(file.fileUrl, file.fileName || file.name);
+      // Buka file_path langsung (karena backend redirect)
+      const redirectUrl = response.url;
+      window.open(redirectUrl, '_blank');
 
-    onClose();
+      toast({
+        title: "Download dimulai",
+        description: `File ${file.name} sedang diproses.`,
+      });
+
+      onClose();
+
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Gagal mengunduh",
+        description: "Terjadi kesalahan saat mengunduh file",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -74,23 +88,13 @@ function DownloadFormModal({ file, onClose }) {
         
         <form onSubmit={handleDownloadSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name">Nama Lengkap</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              required
-            />
-          </div>
-          
-          <div>
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
-              required
+              disabled
             />
           </div>
           
