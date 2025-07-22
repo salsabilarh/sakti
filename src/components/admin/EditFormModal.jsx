@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Search, Check } from 'lucide-react';
+import { Upload, Check, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,41 +9,35 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
-function UploadFile({ onUploadSuccess, onClose }) {
+function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdateSuccess }) {
   const [uploadFile, setUploadFile] = useState(null);
-  const [fileType, setFileType] = useState('');
-  const [serviceId, setServiceId] = useState('');
-  const [open, setOpen] = useState(false);
-  const [uploadedFileUrl, setUploadedFileUrl] = useState('');
+  const [fileType, setFileType] = useState(file?.file_type || '');
+  const [serviceId, setServiceId] = useState(file?.service?.id?.toString() || '');
+  const [name, setName] = useState(file?.name || '');
   const [loading, setLoading] = useState(false);
+  const [openPopover, setOpenPopover] = useState(false);
   const { toast } = useToast();
-  const { authToken } = useAuth();
-  const [services, setServices] = useState([]);
-  const [name, setName] = useState('');
 
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const res = await fetch('https://api-sakti-production.up.railway.app/api/services', {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
-        });
-        const data = await res.json();
-        setServices(data.services || []);
-      } catch (err) {
-        console.error('Failed to load services:', err);
-      }
-    };
-    if (authToken) fetchServices();
-  }, [authToken]);
+    if (file) {
+      setFileType(file.file_type || '');
+      setServiceId(file.service?.id?.toString() || '');
+      setName(file.name || '');
+      setUploadFile(null);
+    }
+  }, [file]);
 
-  const handleFileUpload = async (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    setUploadedFileUrl('');
-    if (!uploadFile || !fileType || !serviceId) {
+    if (!name || !fileType || !serviceId) {
       toast({
         title: 'Form tidak lengkap',
         description: 'Mohon lengkapi semua field yang diperlukan',
@@ -54,15 +48,14 @@ function UploadFile({ onUploadSuccess, onClose }) {
 
     const formData = new FormData();
     formData.append('name', name);
-    formData.append('file', uploadFile);
     formData.append('file_type', fileType);
     formData.append('service_id', serviceId);
+    if (uploadFile) formData.append('file', uploadFile);
 
     setLoading(true);
-
     try {
-      const response = await fetch('https://api-sakti-production.up.railway.app/api/marketing-kits', {
-        method: 'POST',
+      const response = await fetch(`https://api-sakti-production.up.railway.app/api/marketing-kits/${file.id}`, {
+        method: 'PUT',
         headers: {
           Authorization: `Bearer ${authToken}`,
         },
@@ -70,25 +63,18 @@ function UploadFile({ onUploadSuccess, onClose }) {
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Gagal mengunggah file');
+      if (!response.ok) throw new Error(result.error || 'Gagal memperbarui file');
 
       toast({
         title: 'Berhasil!',
-        description: `${uploadFile.name} telah diunggah ke sistem.`,
+        description: `${name} berhasil diperbarui.`,
       });
 
-      setUploadedFileUrl(result.marketing_kit?.file_url || '');
-      setUploadFile(null);
-      setFileType('');
-      setServiceId('');
-      setName('');
-      e.target.reset?.();
-      onUploadSuccess?.();
-      onClose?.(); // 🔒 Tutup form/modal setelah berhasil upload
+      onUpdateSuccess?.();
+      onOpenChange(false);
     } catch (error) {
-      console.error('Upload error:', error);
       toast({
-        title: 'Upload Gagal',
+        title: 'Gagal memperbarui',
         description: error.message,
         variant: 'destructive',
       });
@@ -96,36 +82,28 @@ function UploadFile({ onUploadSuccess, onClose }) {
       setLoading(false);
     }
   };
-
+  
   return (
-    <Card className="border-0 shadow-lg">
-      <CardHeader>
-        <CardTitle>Upload File Marketing</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleFileUpload} className="space-y-6">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Edit File Marketing</DialogTitle>
+          <DialogDescription>Perbarui informasi file marketing kit ini.</DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleUpdate} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <Label>Nama Layanan</Label>
-              <Popover open={open} onOpenChange={setOpen}>
+              <Popover open={openPopover} onOpenChange={setOpenPopover}>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between flex items-center min-w-0"
-                  >
-                    <span
-                      className="truncate text-left"
-                      title={
-                        serviceId
-                          ? services.find(s => s.id.toString() === serviceId)?.name
-                          : 'Pilih layanan...'
-                      }
-                    >
+                  <Button variant="outline" className="w-full justify-between">
+                    <span className="truncate text-left">
                       {serviceId
                         ? services.find(s => s.id.toString() === serviceId)?.name
                         : "Pilih layanan..."}
                     </span>
-                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="min-w-full max-w-sm p-0">
@@ -140,7 +118,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
                             value={service.id.toString()}
                             onSelect={(val) => {
                               setServiceId(val);
-                              setOpen(false);
+                              setOpenPopover(false);
                             }}
                           >
                             <Check className={cn("mr-2 h-4 w-4", serviceId === service.id.toString() ? "opacity-100" : "opacity-0")} />
@@ -153,8 +131,9 @@ function UploadFile({ onUploadSuccess, onClose }) {
                 </PopoverContent>
               </Popover>
             </div>
+
             <div>
-              <Label htmlFor="fileType">Tipe File</Label>
+              <Label>Tipe File</Label>
               <Select onValueChange={setFileType} value={fileType}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih tipe file" />
@@ -171,56 +150,45 @@ function UploadFile({ onUploadSuccess, onClose }) {
           </div>
 
           <div>
-            <Label htmlFor="name">Nama File</Label>
+            <Label>Nama File</Label>
             <Input
-              id="name"
-              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Masukkan nama file yang ditampilkan"
+              placeholder="Masukkan nama file"
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="file">Pilih File</Label>
+            <Label>Upload File Baru (opsional)</Label>
             <Input
-              id="file"
               type="file"
               onChange={(e) => setUploadFile(e.target.files[0])}
               accept=".pdf,.doc,.docx,.ppt,.pptx"
             />
             <p className="text-sm text-gray-500 mt-1">
-              Format yang didukung: PDF, DOC, DOCX, PPT, PPTX
+              Kosongkan jika tidak ingin mengganti file.
             </p>
           </div>
 
-          <Button type="submit" style={{ backgroundColor: '#000476' }} disabled={loading}>
-            {loading ? 'Mengunggah...' : (
-              <>
-                <Upload className="w-4 h-4 mr-2" />
-                Upload File
-              </>
-            )}
-          </Button>
-
-          {uploadedFileUrl && (
-            <p className="mt-4 text-sm text-green-600">
-              File berhasil diunggah.{' '}
-              <a
-                href={uploadedFileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-blue-600"
-              >
-                Download file di sini
-              </a>
-            </p>
-          )}
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={loading} style={{ backgroundColor: '#000476' }}>
+              {loading ? 'Menyimpan...' : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Simpan Perubahan
+                </>
+              )}
+            </Button>
+          </div>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-export default UploadFile;
+export default EditFormModal;
+

@@ -250,7 +250,7 @@ function DaftarJasa() {
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       className="hover:bg-gray-50"
                     >
-                      <TableCell className="font-medium text-gray-900">{index + 1}</TableCell>
+                      <TableCell className="font-medium text-gray-900">{index + 1}.</TableCell>
                       <TableCell className="font-medium text-gray-900">{service.name}</TableCell>
                       <TableCell><code className="bg-gray-100 px-2 py-1 rounded text-sm">{service.code}</code></TableCell>
                       <TableCell>{service.subPortfolio || '-'}</TableCell>

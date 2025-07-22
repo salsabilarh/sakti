@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 function DownloadFormModal({ file, onClose }) {
   const { user, authToken } = useAuth();
   const { toast } = useToast();
+  const [isDownloading, setIsDownloading] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -17,7 +18,6 @@ function DownloadFormModal({ file, onClose }) {
 
   const handleDownloadSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.email || !formData.purpose) {
       toast({
         title: "Form tidak lengkap",
@@ -27,6 +27,7 @@ function DownloadFormModal({ file, onClose }) {
       return;
     }
 
+    setIsDownloading(true);
     try {
       const response = await fetch(
         `https://api-sakti-production.up.railway.app/api/marketing-kits/${file.id}/download`,
@@ -37,7 +38,6 @@ function DownloadFormModal({ file, onClose }) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ purpose: formData.purpose }),
-          redirect: 'follow' // Opsional, defaultnya sudah follow
         }
       );
 
@@ -45,17 +45,15 @@ function DownloadFormModal({ file, onClose }) {
         throw new Error('Gagal memproses permintaan download');
       }
 
-      // Buka file_path langsung (karena backend redirect)
       const redirectUrl = response.url;
       window.open(redirectUrl, '_blank');
 
       toast({
-        title: "Download dimulai",
-        description: `File ${file.name} sedang diproses.`,
+        title: "Download File",
+        description: `File ${file.name} telah berhasil diproses.`,
       });
 
       onClose();
-
     } catch (error) {
       console.error('Download error:', error);
       toast({
@@ -63,6 +61,8 @@ function DownloadFormModal({ file, onClose }) {
         description: "Terjadi kesalahan saat mengunduh file",
         variant: "destructive"
       });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -118,8 +118,8 @@ function DownloadFormModal({ file, onClose }) {
             >
               Batal
             </Button>
-            <Button type="submit" className="flex-1" style={{ backgroundColor: '#000476' }}>
-              Download
+            <Button type="submit" className="flex-1" style={{ backgroundColor: '#000476' }} disabled={isDownloading}>
+              {isDownloading ? 'Memproses...' : 'Download'}
             </Button>
           </div>
         </form>

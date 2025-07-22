@@ -24,7 +24,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import UploadFile from '@/components/admin/UploadFile.jsx';
-import { useToast } from '@/components/ui/use-toast.js'; // Tambahkan toast
+import EditFormModal from '@/components/admin/EditFormModal.jsx';
+import { useToast } from '@/components/ui/use-toast.js';
 
 function MarketingKit() {
   const [kits, setKits] = useState([]);
@@ -38,6 +39,7 @@ function MarketingKit() {
   const { user, authToken } = useAuth();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const canAccess = user && user.role !== ROLES.VIEWER;
   const isAdmin = user && user.role === ROLES.ADMIN;
@@ -284,23 +286,25 @@ function MarketingKit() {
                       <TableCell>{kit.uploader?.full_name || '-'}</TableCell>
                       <TableCell>{new Date(kit.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <div className="flex justify-center items-center gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleDownloadClick(kit)}
-                            style={{ backgroundColor: '#000476' }}
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteKit(kit.id)}
-                          >
-                            Hapus
-                          </Button>
-                        </div>
-                      </TableCell>
+                      <div className="flex justify-center items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedFile(kit);
+                            setShowEditModal(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Button size="sm" style={{ backgroundColor: '#000476' }} onClick={() => handleDownloadClick(kit)}>
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteKit(kit.id)}>
+                          Hapus
+                        </Button>
+                      </div>
+                    </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -313,6 +317,17 @@ function MarketingKit() {
           </Card>
         </motion.div>
 
+        <EditFormModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          file={selectedFile}
+          services={services}
+          authToken={authToken}
+          onUpdateSuccess={() => {
+            fetchMarketingKits();
+            setShowEditModal(false);
+          }}
+        />
         {showDownloadForm && (
           <DownloadFormModal
             file={selectedFile}

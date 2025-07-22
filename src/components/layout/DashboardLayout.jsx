@@ -6,7 +6,7 @@ function DashboardLayout({ children }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex min-h-screen">
       <Sidebar isMobileOpen={isMobileOpen} onToggleMobile={() => setIsMobileOpen(!isMobileOpen)} />
 
       <div className="flex flex-col flex-1 lg:ml-64">
