@@ -63,6 +63,26 @@ function UsersManagement() {
     is_active: true,
   });
   const [adminCount, setAdminCount] = useState(0);
+  const [lastCreatedPassword, setLastCreatedPassword] = useState('');
+  const [lastCreatedEmail, setLastCreatedEmail] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const viewTempPassword = async (userId) => {
+    try {
+      const response = await api.get(`/admin/users/${userId}/temporary-password`);
+      const password = response.data.password;
+
+      const user = users.find(u => u.id === userId);
+      setLastCreatedEmail(user?.email || '');
+      setLastCreatedPassword(password);
+      setShowPasswordModal(true);
+    } catch (err) {
+      toast({
+        title: "Gagal mengambil password",
+        description: err.response?.data?.message || err.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const shouldShowUnitKerja = newUser.role && !['admin', 'viewer'].includes(newUser.role);
   const shouldShowUnitKerjaEdit = editingUser?.role && !['admin', 'viewer'].includes(editingUser.role);
@@ -108,6 +128,7 @@ function UsersManagement() {
         status: u.is_active ? 'Active' : 'Inactive',
         is_active: u.is_active,
         is_verified: u.is_verified,
+        has_temp_password: Boolean(u.has_temp_password)
       }));
       
       setUsers(transformed);
@@ -221,7 +242,7 @@ function UsersManagement() {
     }
 
     try {
-      await api.post("/admin/users", {
+      const response = await api.post("/admin/users", {
         full_name: name,
         email,
         role,
@@ -229,9 +250,16 @@ function UsersManagement() {
         is_active,
       });
 
+      const createdUser = response.data?.data;
+
       await fetchUsers();
       setIsAddModalOpen(false);
       setNewUser({ name: '', email: '', role: '', workUnitId: '', is_active: true });
+
+      // Simpan password & email ke state dan tampilkan modal
+      setLastCreatedPassword(createdUser.password);
+      setLastCreatedEmail(createdUser.email);
+      setShowPasswordModal(true);
 
       toast({
         title: "Pengguna Ditambahkan",
@@ -357,43 +385,39 @@ function UsersManagement() {
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button size="sm" variant="outline" onClick={() => handleEditClick(user)}><Edit className="w-4 h-4" /></Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              {!(user.role === 'admin' && adminCount === 1) && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button size="sm" variant="destructive">
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Hapus Pengguna?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Anda yakin ingin menghapus {toTitleCase(user.name)} secara permanen?
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Batal</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteUser(user)}>
-                                        Hapus
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Pengguna?</AlertDialogTitle>
-                                <AlertDialogDescription>Anda yakin ingin menghapus {toTitleCase(user.name)} secara permanen?</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(user)}>Hapus</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          {!(user.role === 'admin' && adminCount === 1) && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Pengguna?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Anda yakin ingin menghapus {toTitleCase(user.name)} secara permanen?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteUser(user)}>Hapus</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          {user.has_temp_password === true && user.role !== 'admin' && (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => viewTempPassword(user.id)}
+                                title="Lihat Password Sementara"
+                              >
+                                <KeyRound className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -412,7 +436,6 @@ function UsersManagement() {
         </CardContent>
       </Card>
 
-      {/* MODAL EDIT */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -424,6 +447,17 @@ function UsersManagement() {
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Nama</Label>
                 <Input
+                  id="name"
+                  value={editingUser.name}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, name: toTitleCase(e.target.value) })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">Email</Label>
+                <Input
                   id="email"
                   value={editingUser.email}
                   onChange={(e) =>
@@ -431,10 +465,6 @@ function UsersManagement() {
                   }
                   className="col-span-3"
                 />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">Email</Label>
-                <Input id="email" value={editingUser.email} onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })} className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="role" className="text-right">Role</Label>
@@ -556,6 +586,48 @@ function UsersManagement() {
           <DialogFooter>
             <DialogClose asChild><Button variant="secondary">Batal</Button></DialogClose>
             <Button onClick={handleAddUser} style={{ backgroundColor: '#000476' }}>Simpan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Password Sementara</DialogTitle>
+            <DialogDescription asChild>
+              <div className="text-sm text-muted-foreground">
+                Berikan password berikut kepada pengguna untuk login pertama kali.
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Email</Label>
+              <p className="text-sm font-medium bg-gray-100 p-2 rounded">{lastCreatedEmail}</p>
+            </div>
+            <div>
+              <Label>Password</Label>
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-mono bg-gray-100 px-3 py-2 rounded w-full">
+                  {lastCreatedPassword}
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(lastCreatedPassword);
+                    toast({ title: "Disalin ke clipboard" });
+                  }}
+                  className="shrink-0"
+                >
+                  Salin
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">Tutup</Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

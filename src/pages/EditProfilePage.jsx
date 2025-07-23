@@ -18,9 +18,16 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
-import api from '@/lib/api'; // pastikan sudah ada axios instance disini
+import api from '@/lib/api';
 
 import { Eye, EyeOff } from 'lucide-react'; // icon show/hide password
+
+function toTitleCase(str) {
+  if (!str) return '';
+  return str.replace(/\w\S*/g, (txt) =>
+    txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
+  );
+}
 
 function EditProfilePage() {
   const { user, updateUser, authToken } = useAuth();
@@ -218,8 +225,14 @@ function EditProfilePage() {
                     <Input id="unit_kerja" value={user?.unit_kerja || ''} disabled />
                   </div>
                   <div>
-                    <Label htmlFor="role">Role</Label>
-                    <Input id="role" value={user?.role || ''} disabled />
+                    <div>
+                      <Label htmlFor="role">Role</Label>
+                      <Input
+                        id="role"
+                        value={user?.role === 'pdo' ? 'PDO' : toTitleCase(user?.role)}
+                        disabled
+                      />
+                    </div>
                   </div>
                   {user?.role !== 'admin' && (
                     <div className="flex space-x-2">

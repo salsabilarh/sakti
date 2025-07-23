@@ -23,6 +23,13 @@ import {
 const ITEMS_PER_PAGE = 30;
 const BASE_URL = 'https://api-sakti-production.up.railway.app';
 
+function toTitleCase(str) {
+  if (!str) return '';
+  return str.replace(/\w\S*/g, (txt) =>
+    txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
+  );
+}
+
 function WaitingUsers() {
   const { toast } = useToast();
   const { authToken } = useAuth();
@@ -160,7 +167,9 @@ function WaitingUsers() {
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.full_name}</TableCell>
                           <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.role}</TableCell>
+                          <TableCell>
+                            {user.role === 'pdo' ? 'PDO' : toTitleCase(user.role)}
+                          </TableCell>
                           <TableCell>{user.unit?.name || '-'}</TableCell>
                           <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                           <TableCell className="text-center">

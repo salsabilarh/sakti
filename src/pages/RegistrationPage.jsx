@@ -38,6 +38,8 @@ const RegistrationPage = () => {
     role: '',
   });
 
+  const shouldShowUnitKerja = formData.role && !['admin', 'viewer'].includes(formData.role);
+
   useEffect(() => {
     const fetchWorkUnits = async () => {
       try {
@@ -50,6 +52,12 @@ const RegistrationPage = () => {
     };
     fetchWorkUnits();
   }, []);
+
+  useEffect(() => {
+    if (formData.role === 'admin' || formData.role === 'viewer') {
+      setFormData((prev) => ({ ...prev, workUnit: '' }));
+    }
+  }, [formData.role]);
 
   const isStrongPassword = (password) => {
     return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/.test(password);
@@ -109,6 +117,15 @@ const RegistrationPage = () => {
         }),
       });
 
+      if (shouldShowUnitKerja && !formData.workUnit) {
+        toast({
+          title: 'Unit Kerja wajib diisi',
+          description: 'Silakan pilih unit kerja untuk role yang dipilih.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
       const text = await response.text();
       const result = JSON.parse(text || '{}');
 
@@ -156,7 +173,7 @@ const RegistrationPage = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={handleChange} required className="h-11" />
+                    <Input id="email" type="email" autoComplete="email" value={formData.email} onChange={handleChange} required className="h-11" />
                   </div>
 
                   <div className="space-y-2">
@@ -202,22 +219,6 @@ const RegistrationPage = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="workUnit">Unit Kerja</Label>
-                    <Select onValueChange={(value) => setFormData({ ...formData, workUnit: value })} required>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Pilih unit kerja" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workUnits.map((unit) => (
-                          <SelectItem key={unit.id} value={unit.id.toString()}>
-                            {unit.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="role">Peran</Label>
                     <Select onValueChange={(value) => setFormData({ ...formData, role: value })} required>
                       <SelectTrigger className="h-11">
@@ -231,6 +232,28 @@ const RegistrationPage = () => {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {shouldShowUnitKerja && (
+                    <div className="space-y-2">
+                      <Label htmlFor="workUnit">Unit Kerja</Label>
+                      <Select
+                        value={formData.workUnit}
+                        onValueChange={(value) => setFormData({ ...formData, workUnit: value })}
+                        required
+                      >
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Pilih unit kerja" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {workUnits.map((unit) => (
+                            <SelectItem key={unit.id} value={unit.id.toString()}>
+                              {unit.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <Button type="submit" className="w-full h-11 text-white font-medium" style={{ backgroundColor: '#000476' }} disabled={loading}>
                     {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : 'Daftar'}
