@@ -26,9 +26,10 @@ function DaftarJasa() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [total, setTotal] = useState(0);
-  const cannotEdit = user?.role === 'viewer' || user?.role === 'pdo' || user?.unit?.type === 'cabang';
   const [portfolioList, setPortfolioList] = useState([]);
   const [sectorList, setSectorList] = useState([]);
+  const cannotEdit = user?.role === 'viewer' || user?.role === 'pdo' || user?.unit?.type === 'cabang';
+  const canViewDetail = !!user; // Selama user terautentikasi, bisa lihat detail
 
   // Fetch data filter portfolio & sektor
   useEffect(() => {
@@ -260,6 +261,14 @@ function DaftarJasa() {
                       <TableCell>{(service.sectors || []).join(', ') || '-'}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex justify-center items-center gap-x-2">
+                          {canViewDetail && (
+                            <Link to={`/service/${service.id}`}>
+                              <Button variant="outline" size="sm">
+                                <Eye className="w-4 h-4 mr-1" />
+                                Detail
+                              </Button>
+                            </Link>
+                          )}
                           {!cannotEdit && (
                             <>
                               <Link to={`/edit-service/${service.id}`}>
