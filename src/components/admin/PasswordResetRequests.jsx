@@ -12,7 +12,7 @@ import { Search, ArrowUpDown, KeyRound } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 30;
 
 const PasswordResetRequests = () => {
   const { authToken } = useAuth();

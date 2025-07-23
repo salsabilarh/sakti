@@ -6,7 +6,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-toastify';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 30;
 
 function DownloadLogs() {
   const { authToken } = useAuth();

@@ -32,7 +32,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 30;
 const roleOptions = ['Admin', 'Management', 'PDO', 'Viewer'];
 
 function UsersManagement() {
@@ -108,6 +108,12 @@ function UsersManagement() {
         variant: 'destructive',
       });
     }
+  };
+
+  const resetFilters = () => {
+    setFilters({ role: '', workUnit: '', status: '' });
+    setCurrentPage(1);
+    setSearchTerm('');
   };
 
   const requestSort = (key) => {
@@ -242,7 +248,7 @@ function UsersManagement() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input placeholder="Cari nama atau email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Select value={filters.role} onValueChange={(v) => setFilters(f => ({ ...f, role: v === 'all' ? '' : v }))}>
                 <SelectTrigger><SelectValue placeholder="Filter Role" /></SelectTrigger>
                 <SelectContent>
@@ -265,6 +271,7 @@ function UsersManagement() {
                   <SelectItem value="Inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
+              <Button variant="outline" onClick={resetFilters}>Reset Filter</Button>
             </div>
           </div>
 

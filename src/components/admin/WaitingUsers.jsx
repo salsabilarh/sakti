@@ -20,7 +20,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 30;
 const BASE_URL = 'https://api-sakti-production.up.railway.app';
 
 function WaitingUsers() {

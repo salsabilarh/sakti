@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/use-toast';
 import api from '@/lib/api';
 import { useAuth } from '@/hooks/use-auth';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 30;
 
 const UnitChangeRequestPage = () => {
   const { toast } = useToast();
