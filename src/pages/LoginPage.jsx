@@ -97,6 +97,7 @@ function LoginPage() {
                     <Input
                       id="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="nama@sucofindo.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
