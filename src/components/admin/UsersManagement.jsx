@@ -33,7 +33,14 @@ import {
 } from "@/components/ui/dialog";
 
 const ITEMS_PER_PAGE = 30;
-const roleOptions = ['Admin', 'Management', 'PDO', 'Viewer'];
+const roleOptions = ['admin', 'management', 'pdo', 'viewer'];
+
+function toTitleCase(str) {
+  if (!str) return '';
+  return str.replace(/\w\S*/g, (txt) =>
+    txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase()
+  );
+}
 
 function UsersManagement() {
   const { toast } = useToast();
@@ -51,16 +58,31 @@ function UsersManagement() {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    password: '',
     role: '',
     workUnitId: '',
     is_active: true,
   });
+  const [adminCount, setAdminCount] = useState(0);
+
+  const shouldShowUnitKerja = newUser.role && !['admin', 'viewer'].includes(newUser.role);
+  const shouldShowUnitKerjaEdit = editingUser?.role && !['admin', 'viewer'].includes(editingUser.role);
 
   useEffect(() => {
     fetchUsers();
     fetchAllUnits();
   }, [searchTerm, filters, currentPage]);
+
+  useEffect(() => {
+    if (newUser.role === 'admin' || newUser.role === 'viewer') {
+      setNewUser((prev) => ({ ...prev, workUnitId: '' }));
+    }
+  }, [newUser.role]);
+
+  useEffect(() => {
+    if (editingUser?.role === 'admin' || editingUser?.role === 'viewer') {
+      setEditingUser((prev) => ({ ...prev, workUnitId: '' }));
+    }
+  }, [editingUser?.role]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -87,8 +109,10 @@ function UsersManagement() {
         is_active: u.is_active,
         is_verified: u.is_verified,
       }));
-
+      
       setUsers(transformed);
+      const admins = transformed.filter(user => user.role === 'admin');
+      setAdminCount(admins.length);
       setTotalPages(response.data.pagination?.total_pages || 1);
     } catch (error) {
       toast({ title: 'Gagal memuat data user', description: error.message, variant: 'destructive' });
@@ -142,8 +166,11 @@ function UsersManagement() {
   };
 
   const handleSaveUser = async () => {
-    if (!editingUser.workUnitId) {
-      return toast({ title: "Unit Kerja wajib dipilih", variant: "destructive" });
+    if (!editingUser.workUnitId && !['admin', 'viewer'].includes(editingUser.role)) {
+      return toast({
+        title: "Unit Kerja wajib dipilih",
+        variant: "destructive",
+      });
     }
 
     try {
@@ -165,7 +192,7 @@ function UsersManagement() {
 
       toast({
         title: "Pengguna Diperbarui",
-        description: `Informasi untuk ${editingUser.name} telah diperbarui.`,
+        description: `Informasi untuk ${toTitleCase(editingUser.name)} telah diperbarui.`,
       });
     } catch (err) {
       toast({
@@ -177,11 +204,18 @@ function UsersManagement() {
   };
 
   const handleAddUser = async () => {
-    const { name, email, password, role, workUnitId, is_active } = newUser;
+    const { name, email, role, workUnitId, is_active } = newUser;
 
-    if (!name || !email || !password || !role || !workUnitId) {
+    if (!name || !email || !role) {
       return toast({
-        title: "Semua kolom wajib diisi",
+        title: "Nama, Email, dan Role wajib diisi",
+        variant: "destructive",
+      });
+    }
+
+    if (role !== 'admin' && role !== 'viewer' && !workUnitId) {
+      return toast({
+        title: "Unit Kerja wajib dipilih",
         variant: "destructive",
       });
     }
@@ -190,24 +224,23 @@ function UsersManagement() {
       await api.post("/admin/users", {
         full_name: name,
         email,
-        password,
         role,
-        unit_kerja_id: workUnitId,
+        unit_kerja_id: role === 'admin' || role === 'viewer' ? null : workUnitId,
         is_active,
       });
 
       await fetchUsers();
       setIsAddModalOpen(false);
-      setNewUser({ name: '', email: '', password: '', role: '', workUnitId: '', is_active: true });
+      setNewUser({ name: '', email: '', role: '', workUnitId: '', is_active: true });
 
       toast({
         title: "Pengguna Ditambahkan",
-        description: `${name} berhasil ditambahkan.`,
+        description: `${toTitleCase(name)} berhasil ditambahkan.`,
       });
     } catch (err) {
       toast({
         title: "Gagal menambahkan",
-        description: err.response?.data?.error || err.message,
+        description: err.response?.data?.message || err.message,
         variant: "destructive",
       });
     }
@@ -216,7 +249,7 @@ function UsersManagement() {
   const handleDeleteUser = async (userToDelete) => {
     try {
       await api.delete(`/admin/users/${userToDelete.id}`);
-      toast({ title: "Pengguna Dihapus", description: `${userToDelete.name} telah dihapus dari sistem.` });
+      toast({ title: "Pengguna Dihapus", description: `${toTitleCase(userToDelete.name)} telah dihapus dari sistem` });
       fetchUsers();
     } catch (err) {
       toast({ title: "Gagal menghapus", description: err.message, variant: "destructive" });
@@ -253,14 +286,21 @@ function UsersManagement() {
                 <SelectTrigger><SelectValue placeholder="Filter Role" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Role</SelectItem>
-                  {roleOptions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {roleOptions.map(r => (
+                    <SelectItem key={r} value={r}>{r === 'pdo' ? 'PDO' : toTitleCase(r)}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Select value={filters.workUnit} onValueChange={(v) => setFilters(f => ({ ...f, workUnit: v === 'all' ? '' : v }))}>
+              <Select
+                value={filters.workUnit}
+                onValueChange={(v) => setFilters(f => ({ ...f, workUnit: v === 'all' ? '' : v }))}
+              >
                 <SelectTrigger><SelectValue placeholder="Filter Unit Kerja" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Unit</SelectItem>
-                  {workUnits.map(([id, name]) => <SelectItem key={id} value={name}>{name}</SelectItem>)}
+                  {workUnits.map(([id, name]) => (
+                    <SelectItem key={id} value={id}>{name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={filters.status} onValueChange={(v) => setFilters(f => ({ ...f, status: v === 'all' ? '' : v }))}>
@@ -302,9 +342,9 @@ function UsersManagement() {
                   ) : (
                     sortedUsers.map((user) => (
                       <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell className="font-medium">{toTitleCase(user.name)}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.role}</TableCell>
+                      <TableCell>{user.role === 'pdo' ? 'PDO' : toTitleCase(user.role)}</TableCell>
                       <TableCell>{user.workUnit}</TableCell>
                       <TableCell>
                         {getStatusBadge(user.status)}<br />
@@ -318,11 +358,35 @@ function UsersManagement() {
                         <div className="flex space-x-2">
                           <Button size="sm" variant="outline" onClick={() => handleEditClick(user)}><Edit className="w-4 h-4" /></Button>
                           <AlertDialog>
-                            <AlertDialogTrigger asChild><Button size="sm" variant="destructive"><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
+                            <AlertDialogTrigger asChild>
+                              {!(user.role === 'admin' && adminCount === 1) && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="destructive">
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Hapus Pengguna?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Anda yakin ingin menghapus {toTitleCase(user.name)} secara permanen?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteUser(user)}>
+                                        Hapus
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Hapus Pengguna?</AlertDialogTitle>
-                                <AlertDialogDescription>Anda yakin ingin menghapus {user.name} secara permanen?</AlertDialogDescription>
+                                <AlertDialogDescription>Anda yakin ingin menghapus {toTitleCase(user.name)} secara permanen?</AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Batal</AlertDialogCancel>
@@ -359,7 +423,14 @@ function UsersManagement() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Nama</Label>
-                <Input id="name" value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })} className="col-span-3" />
+                <Input
+                  id="email"
+                  value={editingUser.email}
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, email: e.target.value.trim().toLowerCase() })
+                  }
+                  className="col-span-3"
+                />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="email" className="text-right">Email</Label>
@@ -369,22 +440,28 @@ function UsersManagement() {
                 <Label htmlFor="role" className="text-right">Role</Label>
                 <Select value={editingUser.role} onValueChange={(v) => setEditingUser({ ...editingUser, role: v })}>
                   <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                  <SelectContent>{roleOptions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Unit Kerja</Label>
-                <Select value={editingUser.workUnitId} onValueChange={(v) => setEditingUser({ ...editingUser, workUnitId: v })}>
-                  <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {workUnits.map(([id, name]) => (
-                      <SelectItem key={id} value={id}>
-                        {name}
-                      </SelectItem>
+                    {roleOptions.map(r => (
+                      <SelectItem key={r} value={r}>{r === 'pdo' ? 'PDO' : toTitleCase(r)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+              {shouldShowUnitKerjaEdit && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">Unit Kerja</Label>
+                  <Select value={editingUser.workUnitId} onValueChange={(v) => setEditingUser({ ...editingUser, workUnitId: v })}>
+                    <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {workUnits.map(([id, name]) => (
+                        <SelectItem key={id} value={id}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">Status Aktif</Label>
                 <Select value={editingUser.is_active ? 'true' : 'false'} onValueChange={(v) => setEditingUser({ ...editingUser, is_active: v === 'true' })}>
@@ -423,38 +500,48 @@ function UsersManagement() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Nama</Label>
-              <Input className="col-span-3" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
+              <Input
+                className="col-span-3"
+                value={newUser.name}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, name: toTitleCase(e.target.value) })
+                }
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Email</Label>
-              <Input className="col-span-3" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Password</Label>
-              <Input className="col-span-3" type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} />
+              <Input
+                className="col-span-3"
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value.trim().toLowerCase() })
+                }
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Role</Label>
               <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
                 <SelectTrigger className="col-span-3"><SelectValue placeholder="Pilih Role" /></SelectTrigger>
                 <SelectContent>
-                  {roleOptions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    {roleOptions.map(r => (
+                      <SelectItem key={r} value={r}>{r === 'pdo' ? 'PDO' : toTitleCase(r)}</SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Unit Kerja</Label>
-              <Select value={newUser.workUnitId} onValueChange={(v) => setNewUser({ ...newUser, workUnitId: v })}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder="Pilih Unit Kerja" /></SelectTrigger>
-                <SelectContent>
-                  {workUnits.map(([id, name]) => (
-                    <SelectItem key={id} value={id}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {shouldShowUnitKerja && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Unit Kerja</Label>
+                <Select value={newUser.workUnitId} onValueChange={(v) => setNewUser({ ...newUser, workUnitId: v })}>
+                  <SelectTrigger className="col-span-3"><SelectValue placeholder="Pilih Unit Kerja" /></SelectTrigger>
+                  <SelectContent>
+                    {workUnits.map(([id, name]) => (
+                      <SelectItem key={id} value={id}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Status</Label>
               <Select value={newUser.is_active ? "true" : "false"} onValueChange={(v) => setNewUser({ ...newUser, is_active: v === "true" })}>

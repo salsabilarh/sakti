@@ -17,15 +17,18 @@ const DetailCard = ({ icon, title, children, delay }) => (
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay }}
+    className="w-full"
   >
-    <Card className="border-0 shadow-md hover:shadow-xl transition rounded-xl h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2 text-lg text-[#000476]">
+    <Card className="border border-gray-200 shadow hover:shadow-lg rounded-2xl transition duration-300 h-full">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center space-x-2 text-xl font-semibold text-[#000476]">
           {icon}
           <span>{title}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="pt-0">
+        {children}
+      </CardContent>
     </Card>
   </motion.div>
 );
@@ -68,7 +71,7 @@ function DetailService() {
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Layanan Tidak Ditemukan</h2>
         <Link to="/daftar-jasa">
-          <Button style={{ backgroundColor: '#000476' }}>Kembali ke Daftar Jasa</Button>
+          <Button className="bg-[#000476] hover:bg-indigo-900 text-white">Kembali ke Daftar Jasa</Button>
         </Link>
       </div>
     );
@@ -84,10 +87,10 @@ function DetailService() {
         <meta name="description" content={`Informasi detail layanan ${service.name}`} />
       </Helmet>
 
-      <div className="px-4 md:px-6 lg:px-20 py-6 space-y-8">
+      <div className="px-4 md:px-8 lg:px-20 py-8 space-y-10 bg-gray-50 min-h-screen">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
           <Link to="/daftar-jasa">
-            <Button variant="outline" className="mb-4">
+            <Button variant="outline" className="mb-6">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Kembali ke Daftar Jasa
             </Button>
@@ -98,23 +101,21 @@ function DetailService() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gradient-to-r from-[#000476] to-indigo-800 rounded-2xl p-8 text-white"
+          className="bg-gradient-to-r from-[#000476] to-indigo-800 rounded-3xl p-8 text-white shadow-lg"
         >
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="flex-1">
-              <div className="flex items-center space-x-3 mb-4 flex-wrap">
+              <div className="flex items-center space-x-3 mb-3 flex-wrap">
                 {service.group && (
-                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                    {service.group}
-                  </Badge>
+                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30">{service.group}</Badge>
                 )}
                 {service.code && (
                   <code className="bg-white/20 px-3 py-1 rounded text-sm font-mono">{service.code}</code>
                 )}
               </div>
-              <h1 className="text-3xl font-bold mb-3">{service.name}</h1>
-              <p className="text-blue-100 text-lg mb-4">{service.overview}</p>
-              <div className="flex flex-wrap gap-4 text-sm">
+              <h1 className="text-4xl font-bold mb-4">{service.name}</h1>
+              <p className="text-blue-100 text-lg leading-relaxed">{service.overview}</p>
+              <div className="flex flex-wrap gap-6 mt-4 text-sm text-blue-100">
                 {service.sbu_owner?.name && (
                   <div className="flex items-center space-x-2">
                     <Building className="w-4 h-4" />
@@ -130,9 +131,7 @@ function DetailService() {
                 {service.sub_portfolio?.name && (
                   <div className="flex items-center space-x-2">
                     <BarChart className="w-4 h-4" />
-                    <span>
-                      {service.sub_portfolio.name} ({service.sub_portfolio.code})
-                    </span>
+                    <span>{service.sub_portfolio.name} ({service.sub_portfolio.code})</span>
                   </div>
                 )}
               </div>
@@ -140,14 +139,14 @@ function DetailService() {
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
             {benefitList.length > 0 && (
               <DetailCard icon={<Star className="w-5 h-5 text-yellow-500" />} title="Manfaat Layanan" delay={0.1}>
                 <ul className="space-y-3">
                   {benefitList.map((item, index) => (
                     <li key={index} className="flex items-start space-x-3">
-                      <ChevronRight className="w-4 h-4 text-[#000476] mt-1 flex-shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-[#000476] mt-1" />
                       <span className="text-gray-700">{item.trim()}</span>
                     </li>
                   ))}
@@ -160,7 +159,7 @@ function DetailService() {
                 <ul className="space-y-3">
                   {outputList.map((item, index) => (
                     <li key={index} className="flex items-start space-x-3">
-                      <ChevronRight className="w-4 h-4 text-[#000476] mt-1 flex-shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-[#000476] mt-1" />
                       <span className="text-gray-700">{item.trim()}</span>
                     </li>
                   ))}
@@ -170,17 +169,15 @@ function DetailService() {
 
             {service.scope && (
               <DetailCard icon={<LayoutDashboard className="w-5 h-5 text-indigo-600" />} title="Ruang Lingkup" delay={0.3}>
-                <p className="text-gray-700 leading-relaxed tracking-wide text-base">{service.scope}</p>
+                <p className="text-gray-700 text-base leading-relaxed">{service.scope}</p>
               </DetailCard>
             )}
 
             {service.sectors?.length > 0 && (
               <DetailCard icon={<FolderKanban className="w-5 h-5 text-indigo-600" />} title="Sektor Terkait" delay={0.4}>
-                <ul className="space-y-2">
+                <ul className="space-y-2 text-gray-700">
                   {service.sectors.map(sector => (
-                    <li key={sector.id} className="text-gray-700">
-                      {sector.name} ({sector.code})
-                    </li>
+                    <li key={sector.id}>{sector.name} ({sector.code})</li>
                   ))}
                 </ul>
               </DetailCard>
@@ -188,22 +185,20 @@ function DetailService() {
 
             {service.sub_sectors?.length > 0 && (
               <DetailCard icon={<FolderKanban className="w-5 h-5 text-indigo-600" />} title="Sub Sektor Terkait" delay={0.45}>
-                <ul className="space-y-2">
+                <ul className="space-y-2 text-gray-700">
                   {service.sub_sectors.map(sub => (
-                    <li key={sub.id} className="text-gray-700">
-                      {sub.name} ({sub.code})
-                    </li>
+                    <li key={sub.id}>{sub.name} ({sub.code})</li>
                   ))}
                 </ul>
               </DetailCard>
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             {service.intro_video_url && (
-              <DetailCard icon={<Youtube className="w-5 h-5 text-indigo-600" />} title="Introduction Module" delay={0.5}>
+              <DetailCard icon={<Youtube className="w-5 h-5 text-red-600" />} title="Introduction Module" delay={0.5}>
                 <a href={service.intro_video_url} target="_blank" rel="noopener noreferrer">
-                  <Button className="w-full bg-blue-600 hover:bg-red-700 text-white">
+                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Tonton Video Modul
                   </Button>
@@ -219,27 +214,29 @@ function DetailService() {
 
             {service.marketing_kits?.length > 0 && (
               <DetailCard icon={<Download className="w-5 h-5 text-indigo-600" />} title="Marketing Kit" delay={0.6}>
-                <table className="w-full text-sm border rounded overflow-hidden">
-                  <tbody>
-                    {service.marketing_kits.map((file, index) => (
-                      <tr key={index} className="border-b last:border-b-0 hover:bg-gray-50 transition">
-                        <td className="py-3 px-4">
-                          <p className="font-medium text-gray-800">{file.name}</p>
-                          <p className="text-gray-500">{file.file_type}</p>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <Button
-                            size="sm"
-                            onClick={() => handleDownloadClick(file)}
-                            className="bg-[#000476] hover:bg-indigo-900 text-white"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="rounded overflow-hidden border border-gray-200">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {service.marketing_kits.map((file, index) => (
+                        <tr key={index} className="border-b last:border-none hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <p className="font-medium text-gray-800">{file.name}</p>
+                            <p className="text-gray-500">{file.file_type}</p>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <Button
+                              size="sm"
+                              onClick={() => handleDownloadClick(file)}
+                              className="bg-[#000476] hover:bg-indigo-900 text-white"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </DetailCard>
             )}
           </div>

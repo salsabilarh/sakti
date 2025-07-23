@@ -23,7 +23,7 @@ const UnitChangeRequestPage = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({ totalPages: 1, currentPage: 1 });
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchRequests = async (page = 1) => {
     setLoading(true);
@@ -35,7 +35,7 @@ const UnitChangeRequestPage = () => {
       });
 
       setRequests(res.data.data || []);
-      setPagination(res.data.pagination || { totalPages: 1, currentPage: 1 });
+      setTotalPages(res.data.pagination?.totalPages || 1);
       setCurrentPage(page);
     } catch (error) {
       toast({
@@ -99,29 +99,27 @@ const UnitChangeRequestPage = () => {
               </TableBody>
             </Table>
 
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchRequests(currentPage - 1)}
-                  disabled={currentPage === 1 || loading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {pagination.currentPage} of {pagination.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchRequests(currentPage + 1)}
-                  disabled={currentPage === pagination.totalPages || loading}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center justify-end space-x-2 py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1 || loading}
+              >
+                Previous
+              </Button>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages || loading}
+              >
+                Next
+              </Button>
+            </div>
           </>
         )}
       </CardContent>
