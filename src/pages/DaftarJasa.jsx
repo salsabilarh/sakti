@@ -16,9 +16,8 @@ import {
 } from '@/components/ui/table.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
-
 function DaftarJasa() {
-  const { authToken } = useAuth();
+  const {user, authToken } = useAuth();
   const [services, setServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPortfolioId, setSelectedPortfolioId] = useState('');
@@ -27,7 +26,7 @@ function DaftarJasa() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [total, setTotal] = useState(0);
-
+  const cannotEdit = user?.role === 'viewer' || user?.role === 'pdo' || user?.unit?.type === 'cabang';
   const [portfolioList, setPortfolioList] = useState([]);
   const [sectorList, setSectorList] = useState([]);
 
@@ -150,9 +149,11 @@ function DaftarJasa() {
         {/* Filter dan Search */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
           <div className="flex justify-end">
-            <Link to="/tambah-jasa">
-              <Button className="mb-4">+ Tambah Layanan</Button>
-            </Link>
+            {!cannotEdit && (
+              <Link to="/tambah-jasa">
+                <Button className="mb-4">+ Tambah Layanan</Button>
+              </Link>
+            )}
           </div>
           <Card className="border-0 shadow-lg">
             <CardHeader>
@@ -259,25 +260,23 @@ function DaftarJasa() {
                       <TableCell>{(service.sectors || []).join(', ') || '-'}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex justify-center items-center gap-x-2">
-                          <Link to={`/service/${service.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Eye className="w-4 h-4 mr-1" />
-                              Detail
-                            </Button>
-                          </Link>
-                          <Link to={`/edit-service/${service.id}`}>
-                            <Button variant="outline" size="sm" className="text-blue-600 border-blue-600">
-                              Edit
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 border-red-600"
-                            onClick={() => handleDelete(service.id)}
-                          >
-                            Hapus
-                          </Button>
+                          {!cannotEdit && (
+                            <>
+                              <Link to={`/edit-service/${service.id}`}>
+                                <Button variant="outline" size="sm" className="text-blue-600 border-blue-600">
+                                  Edit
+                                </Button>
+                              </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-600"
+                                onClick={() => handleDelete(service.id)}
+                              >
+                                Hapus
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </motion.tr>

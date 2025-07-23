@@ -9,7 +9,7 @@ const navConfig = {
   [ROLES.ADMIN]: ['Dashboard', 'Daftar Jasa', 'Marketing Kit', 'Admin Panel'],
   [ROLES.MANAJEMEN]: ['Dashboard', 'Daftar Jasa', 'Marketing Kit'],
   [ROLES.PDO]: ['Dashboard', 'Daftar Jasa', 'Marketing Kit'],
-  [ROLES.VIEWER]: ['Daftar Jasa'],
+  [ROLES.VIEWER]: ['Dashboard', 'Daftar Jasa'],
 };
 
 const allNavigation = [
@@ -22,7 +22,7 @@ const allNavigation = [
 function Sidebar({ isMobileOpen, onToggleMobile }) {
   const location = useLocation();
   const { user } = useAuth();
-  const userNav = navConfig[user?.role] || [];
+  const userNav = user?.role && navConfig[user.role] ? navConfig[user.role] : [];
   const visibleNavigation = allNavigation.filter(item => userNav.includes(item.name));
 
   const sidebarContent = (

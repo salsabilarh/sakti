@@ -221,59 +221,61 @@ function EditProfilePage() {
                     <Label htmlFor="role">Role</Label>
                     <Input id="role" value={user?.role || ''} disabled />
                   </div>
-                  <div className="flex space-x-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button type="button" style={{ backgroundColor: '#000476' }}>
-                          Request Ganti Unit
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle>Request Perubahan Unit Kerja</DialogTitle>
-                          <DialogDescription>
-                            Pilih unit kerja baru Anda. Permintaan akan dikirim ke admin untuk persetujuan.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="newUnit" className="text-right">
-                              Unit Baru
-                            </Label>
-                            <div className="col-span-3">
-                              <Select onValueChange={setNewUnitId} value={newUnitId}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Pilih unit..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {units.map((unit) => (
-                                    <SelectItem key={unit.id} value={unit.id}>
-                                      {unit.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                  {user?.role !== 'admin' && (
+                    <div className="flex space-x-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button type="button" style={{ backgroundColor: '#000476' }}>
+                            Request Ganti Unit
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                          <DialogHeader>
+                            <DialogTitle>Request Perubahan Unit Kerja</DialogTitle>
+                            <DialogDescription>
+                              Pilih unit kerja baru Anda. Permintaan akan dikirim ke admin untuk persetujuan.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label htmlFor="newUnit" className="text-right">
+                                Unit Baru
+                              </Label>
+                              <div className="col-span-3">
+                                <Select onValueChange={setNewUnitId} value={newUnitId}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Pilih unit..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {units.map((unit) => (
+                                      <SelectItem key={unit.id} value={unit.id}>
+                                        {unit.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <DialogFooter>
-                          <DialogClose asChild>
-                            <Button type="button" variant="secondary">
-                              Batal
-                            </Button>
-                          </DialogClose>
-                          <DialogClose asChild>
-                            <Button
-                              onClick={handleUnitChangeRequest}
-                              style={{ backgroundColor: '#000476' }}
-                            >
-                              Kirim Permintaan
-                            </Button>
-                          </DialogClose>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button type="button" variant="secondary">
+                                Batal
+                              </Button>
+                            </DialogClose>
+                            <DialogClose asChild>
+                              <Button
+                                onClick={handleUnitChangeRequest}
+                                style={{ backgroundColor: '#000476' }}
+                              >
+                                Kirim Permintaan
+                              </Button>
+                            </DialogClose>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  )}
                 </form>
               </CardContent>
             </Card>

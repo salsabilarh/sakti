@@ -26,6 +26,16 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function RoleProtectedRoute({ allowedRoles, children }) {
+  const { user } = useAuth();
+
+  if (!allowedRoles.includes(user?.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
   
@@ -87,16 +97,21 @@ function AppRoutes() {
       } />
       <Route path="/marketing-kit" element={
         <ProtectedRoute>
-          <DashboardLayout>
-            <MarketingKit />
-          </DashboardLayout>
+          <RoleProtectedRoute allowedRoles={['admin', 'manajemen', 'pdo']}>
+            <DashboardLayout>
+              <MarketingKit />
+            </DashboardLayout>
+          </RoleProtectedRoute>
         </ProtectedRoute>
       } />
+
       <Route path="/admin" element={
         <ProtectedRoute>
-          <DashboardLayout>
-            <AdminPanel />
-          </DashboardLayout>
+          <RoleProtectedRoute allowedRoles={['admin']}>
+            <DashboardLayout>
+              <AdminPanel />
+            </DashboardLayout>
+          </RoleProtectedRoute>
         </ProtectedRoute>
       } />
       <Route path="/edit-profile" element={

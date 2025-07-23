@@ -11,76 +11,82 @@ function Dashboard() {
   const webchatRef = useRef(null);
 
   useEffect(() => {
-    const loadBotpress = async () => {
-      // Inject only once
-      if (!document.getElementById('botpress-webchat-script')) {
+    const injectBotpressScript = () => {
+      return new Promise((resolve, reject) => {
+        if (document.getElementById('botpress-webchat-script')) {
+          return resolve(); // Script already injected
+        }
+
         const script = document.createElement('script');
         script.src = 'https://cdn.botpress.cloud/webchat/v3.1/inject.js';
         script.async = true;
         script.id = 'botpress-webchat-script';
+        script.onload = resolve;
+        script.onerror = reject;
         document.body.appendChild(script);
+      });
+    };
 
-        script.onload = () => {
-          if (window.botpress && webchatRef.current) {
-            window.botpress.on('webchat:ready', () => {
-              console.log('[Botpress] Webchat ready');
-              window.botpress.open(); // Auto open
-            });
+    const initializeBotpress = async () => {
+      try {
+        await injectBotpressScript();
 
-            window.botpress.init({
-              botId: 'd07d2c58-86af-494a-ba32-cfc090caa171',
-              clientId: '42b065f3-6d14-4a80-8df0-bd92f56b3f53',
-              selector: '#webchat',
-              "embedded": true, // ⬅️ INI KUNCI UTAMA
-              configuration: {
-                version: 'v1',
-                color: '#3276EA',
-                variant: 'solid',
-                headerVariant: 'glass',
-                themeMode: 'light',
-                fontFamily: 'inter',
-                radius: 4,
-                feedbackEnabled: true,
-                footer: '[⚡ by Botpress](https://botpress.com/?from=webchat)',
-              },
-            });
-          }
-        };
+        if (window.botpress && webchatRef.current) {
+          window.botpress.init({
+            botId: 'd07d2c58-86af-494a-ba32-cfc090caa171',
+            clientId: '42b065f3-6d14-4a80-8df0-bd92f56b3f53',
+            selector: '#webchat',
+            embedded: true,
+            configuration: {
+              version: 'v1',
+              color: '#3276EA',
+              variant: 'solid',
+              headerVariant: 'glass',
+              themeMode: 'light',
+              fontFamily: 'inter',
+              radius: 4,
+              feedbackEnabled: true,
+              footer: '[⚡ by Botpress](https://botpress.com/?from=webchat)',
+            },
+          });
+
+          window.botpress.on('webchat:ready', () => {
+            window.botpress.open(); // Auto open on load
+          });
+        }
+      } catch (error) {
+        console.error('Botpress initialization failed:', error);
       }
     };
 
-    loadBotpress();
+    initializeBotpress();
   }, []);
 
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
       #webchat .bpWebchat {
-        position: unset !important;
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+        max-width: 100% !important;
+        border-radius: 12px !important;
+        overflow: hidden;
+      }
+
+      #webchat .bpWebchat iframe {
         width: 100% !important;
         height: 100% !important;
-        max-height: 100% !important;
-        max-width: 100% !important;
+        aspect-ratio: 16/9 !important;
+        border: none;
       }
+
       #webchat .bpFab {
         display: none !important;
       }
     `;
     document.head.appendChild(style);
   }, []);
-
-  // Role restriction
-  if (user?.role === ROLES.VIEWER) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Akses Terbatas</h2>
-        <p className="text-gray-600 mb-6">Anda hanya dapat melihat daftar layanan.</p>
-        <Link to="/daftar-jasa">
-          <Button style={{ backgroundColor: '#000476' }}>Lihat Daftar Jasa</Button>
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -136,8 +142,12 @@ function Dashboard() {
               <p className="text-gray-600">Tanyakan apa saja tentang layanan dan dokumentasi kami</p>
             </CardHeader>
             <CardContent>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div ref={webchatRef} id="webchat" style={{ width: '100%', height: '500px' }}></div>
+              <div className="relative w-full aspect-[16/9] sm:aspect-[4/3] max-h-[600px] overflow-hidden">
+                <div
+                  ref={webchatRef}
+                  id="webchat"
+                  className="absolute top-0 left-0 w-full h-full"
+                />
               </div>
             </CardContent>
           </Card>

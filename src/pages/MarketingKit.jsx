@@ -43,6 +43,7 @@ function MarketingKit() {
 
   const canAccess = user && user.role !== ROLES.VIEWER;
   const isAdmin = user && user.role === ROLES.ADMIN;
+  const cannotEdit = user?.role === 'viewer' || user?.role === 'pdo' || user?.unit?.type === 'cabang';
 
   const fetchMarketingKits = async () => {
     setLoading(true);
@@ -172,27 +173,27 @@ function MarketingKit() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Marketing Kit</h1>
             <p className="text-gray-600">Unduh materi pemasaran, brosur, dan dokumentasi untuk layanan kami</p>
           </div>
-          {isAdmin && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button style={{ backgroundColor: '#000476' }}>
-                <Upload className="w-4 h-4 mr-2" />
-                Upload File
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
-              <DialogHeader>
-                <DialogTitle>Upload File Baru</DialogTitle>
-                <DialogDescription>Tambahkan file marketing baru ke dalam sistem.</DialogDescription>
-              </DialogHeader>
-              <UploadFile
-                onUploadSuccess={() => {
-                  fetchMarketingKits();
-                  setDialogOpen(false);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+          {isAdmin && !cannotEdit && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button style={{ backgroundColor: '#000476' }}>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload File
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[625px]">
+                <DialogHeader>
+                  <DialogTitle>Upload File Baru</DialogTitle>
+                  <DialogDescription>Tambahkan file marketing baru ke dalam sistem.</DialogDescription>
+                </DialogHeader>
+                <UploadFile
+                  onUploadSuccess={() => {
+                    fetchMarketingKits();
+                    setDialogOpen(false);
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
           )}
         </motion.div>
 
@@ -287,21 +288,29 @@ function MarketingKit() {
                       <TableCell>{new Date(kit.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                       <div className="flex justify-center items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedFile(kit);
-                            setShowEditModal(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
+                        {!cannotEdit && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedFile(kit);
+                                setShowEditModal(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteKit(kit.id)}
+                            >
+                              Hapus
+                            </Button>
+                          </>
+                        )}
                         <Button size="sm" style={{ backgroundColor: '#000476' }} onClick={() => handleDownloadClick(kit)}>
                           <Download className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDeleteKit(kit.id)}>
-                          Hapus
                         </Button>
                       </div>
                     </TableCell>
