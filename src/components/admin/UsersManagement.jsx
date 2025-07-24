@@ -292,7 +292,7 @@ function UsersManagement() {
     }
   };
 
-  const workUnits = allUnits.map(unit => [unit.id, unit.name]);
+  const workUnits = allUnits.map(unit => ({ id: unit.id, name: unit.name }));
 
   return (
     <>
@@ -484,7 +484,7 @@ function UsersManagement() {
                   <Label className="text-right">Unit Kerja</Label>
                   <Select value={editingUser.workUnitId} onValueChange={(v) => setEditingUser({ ...editingUser, workUnitId: v })}>
                     <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-80 overflow-y-auto">
                       {workUnits.map((unit) => (
                         <SelectItem key={unit.id} value={unit.id.toString()}>
                           {unit.name}
