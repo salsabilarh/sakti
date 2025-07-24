@@ -59,6 +59,23 @@ function TambahJasa() {
 
   const canCreateMasterData = user.role === 'admin' || user.role === 'ppk_manager';
 
+  const getYoutubeEmbedUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      const videoId = urlObj.searchParams.get("v");
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+      // Handle shortened youtu.be links
+      if (urlObj.hostname === 'youtu.be') {
+        return `https://www.youtube.com/embed${urlObj.pathname}`;
+      }
+    } catch (err) {
+      return null;
+    }
+    return null;
+  };
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -101,12 +118,6 @@ function TambahJasa() {
       .flatMap((s) => s.sub_sectors || []);
     setSubSectors(selectedSubs);
   }, [form.sectors, sectors]);
-
-  useEffect(() => {
-    fetch('https://api-sakti-production.up.railway.app/api/portfolios')
-      .then(res => res.json())
-      .then(data => setPortfolios(data.portfolios || []));
-  }, []);
 
   useEffect(() => {
     if (!showSubPortfolioModal) {
@@ -379,12 +390,13 @@ function TambahJasa() {
               <div>
                 <label className="font-medium block">Link Video Intro</label>
                 <Input name="intro_video_url" value={form.intro_video_url} onChange={handleChange} />
-                {form.intro_video_url && (
+                {form.intro_video_url && getYoutubeEmbedUrl(form.intro_video_url) && (
                   <iframe
-                    src={form.intro_video_url}
+                    src={getYoutubeEmbedUrl(form.intro_video_url)}
                     title="Video Preview"
                     className="w-full h-52 border mt-2"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
                   />
                 )}
               </div>
