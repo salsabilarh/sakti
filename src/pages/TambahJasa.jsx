@@ -136,14 +136,18 @@ function TambahJasa() {
     }
     setForm((prev) => ({ ...prev, sub_sectors: selected }));
   };
-
+  
   const handleMultiSectorSelect = (e) => {
-    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
+    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value); // value is string
     if (selected.includes('__new__')) {
       setShowSectorModal(true);
       return;
     }
-    setForm((prev) => ({ ...prev, sectors: selected, sub_sectors: [] })); // kosongkan sub sektor jika sektor berubah
+    setForm((prev) => ({
+      ...prev,
+      sectors: selected,
+      sub_sectors: [], // Reset sub sektor saat sektor berubah
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -464,38 +468,71 @@ function TambahJasa() {
 
               <div>
                 <label className="font-medium block">Sektor</label>
-                <select
-                  multiple
-                  name="sectors"
-                  value={form.sectors}
-                  onChange={handleMultiSectorSelect}
-                  className="border rounded px-3 py-2 w-full h-32"
-                >
-                  {sectors.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.code} - {s.name}
-                    </option>
+                <div className="space-y-1 border rounded p-3">
+                  {sectors.map((s) => (
+                    <label key={s.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        value={s.id.toString()}
+                        checked={form.sectors.includes(s.id.toString())}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const value = e.target.value;
+
+                          const updated = checked
+                            ? [...form.sectors, value]
+                            : form.sectors.filter((id) => id !== value);
+
+                          setForm((prev) => ({
+                            ...prev,
+                            sectors: updated,
+                            sub_sectors: [], // reset sub sektor jika sektor berubah
+                          }));
+                        }}
+                      />
+                      <span>{s.code} - {s.name}</span>
+                    </label>
                   ))}
-                  {canCreateMasterData && <option value="__new__">+ Tambah Sektor Baru</option>}
-                </select>
+                  {canCreateMasterData && (
+                    <Button type="button" onClick={() => setShowSectorModal(true)} size="sm">
+                      + Tambah Sektor Baru
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div>
                 <label className="font-medium block">Sub Sektor</label>
-                <select
-                  multiple
-                  name="sub_sectors"
-                  value={form.sub_sectors}
-                  onChange={handleMultiSelect}
-                  className="border rounded px-3 py-2 w-full h-32"
-                >
+                <div className="space-y-1 border rounded p-3">
                   {subSectors.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.code} - {sub.name}
-                    </option>
+                    <label key={sub.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        value={sub.id.toString()}
+                        checked={form.sub_sectors.includes(sub.id.toString())}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const value = e.target.value;
+
+                          const updated = checked
+                            ? [...form.sub_sectors, value]
+                            : form.sub_sectors.filter((id) => id !== value);
+
+                          setForm((prev) => ({
+                            ...prev,
+                            sub_sectors: updated,
+                          }));
+                        }}
+                      />
+                      <span>{sub.code} - {sub.name}</span>
+                    </label>
                   ))}
-                  {canCreateMasterData && <option value="__new__">+ Tambah Sub Sektor Baru</option>}
-                </select>
+                  {canCreateMasterData && (
+                    <Button type="button" onClick={() => setShowSubSectorModal(true)} size="sm">
+                      + Tambah Sub Sektor Baru
+                    </Button>
+                  )}
+                </div>
               </div>
               <Button type="submit" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan Layanan'}</Button>
             </CardContent>
