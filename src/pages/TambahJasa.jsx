@@ -32,7 +32,7 @@ function TambahJasa() {
     portfolio_id: '',
     sub_portfolio_id: '',
     sbu_owner_id: '',
-    sector_id: '',
+    sectors: [],
     sub_sectors: [],
   });
 
@@ -95,10 +95,12 @@ function TambahJasa() {
   }, [authToken, toast]);
 
   useEffect(() => {
-    const selected = sectors.find((s) => s.id.toString() === form.sector_id);
-    setSubSectors(selected?.sub_sectors || []);
-    setForm((prev) => ({ ...prev, sub_sectors: [] }));
-  }, [form.sector_id, sectors]);
+    // Ambil semua sub sektor dari sektor-sektor terpilih
+    const selectedSubs = sectors
+      .filter((s) => form.sectors.includes(s.id.toString()))
+      .flatMap((s) => s.sub_sectors || []);
+    setSubSectors(selectedSubs);
+  }, [form.sectors, sectors]);
 
   useEffect(() => {
     fetch('https://api-sakti-production.up.railway.app/api/portfolios')
@@ -135,6 +137,15 @@ function TambahJasa() {
     setForm((prev) => ({ ...prev, sub_sectors: selected }));
   };
 
+  const handleMultiSectorSelect = (e) => {
+    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
+    if (selected.includes('__new__')) {
+      setShowSectorModal(true);
+      return;
+    }
+    setForm((prev) => ({ ...prev, sectors: selected, sub_sectors: [] })); // kosongkan sub sektor jika sektor berubah
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -152,7 +163,7 @@ function TambahJasa() {
     try {
       const payload = {
         ...form,
-        sectors: form.sector_id ? [form.sector_id] : [],
+        sectors: form.sectors || [],
         sub_sectors: form.sub_sectors || [],
       };
 
@@ -454,20 +465,16 @@ function TambahJasa() {
               <div>
                 <label className="font-medium block">Sektor</label>
                 <select
-                  name="sector_id"
-                  value={form.sector_id}
-                  onChange={(e) => {
-                    if (e.target.value === '__new__') {
-                      setShowSectorModal(true);
-                      return;
-                    }
-                    handleChange(e);
-                  }}
-                  className="border rounded px-3 py-2 w-full"
+                  multiple
+                  name="sectors"
+                  value={form.sectors}
+                  onChange={handleMultiSectorSelect}
+                  className="border rounded px-3 py-2 w-full h-32"
                 >
-                  <option value="">-- Pilih Sektor --</option>
                   {sectors.map(s => (
-                    <option key={s.id} value={s.id}>{s.code} - {s.name}</option>
+                    <option key={s.id} value={s.id}>
+                      {s.code} - {s.name}
+                    </option>
                   ))}
                   {canCreateMasterData && <option value="__new__">+ Tambah Sektor Baru</option>}
                 </select>
@@ -483,12 +490,13 @@ function TambahJasa() {
                   className="border rounded px-3 py-2 w-full h-32"
                 >
                   {subSectors.map((sub) => (
-                    <option key={sub.id} value={sub.id}>{sub.code} - {sub.name}</option>
+                    <option key={sub.id} value={sub.id}>
+                      {sub.code} - {sub.name}
+                    </option>
                   ))}
                   {canCreateMasterData && <option value="__new__">+ Tambah Sub Sektor Baru</option>}
                 </select>
               </div>
-
               <Button type="submit" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan Layanan'}</Button>
             </CardContent>
           </Card>
