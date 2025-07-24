@@ -292,7 +292,7 @@ function UsersManagement() {
     }
   };
 
-  const workUnits = allUnits;
+  const workUnits = allUnits.map(unit => [unit.id, unit.name]);
 
   return (
     <>
@@ -326,8 +326,10 @@ function UsersManagement() {
                 <SelectTrigger><SelectValue placeholder="Filter Unit Kerja" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Unit</SelectItem>
-                  {workUnits.map(([id, name]) => (
-                    <SelectItem key={id} value={id}>{name}</SelectItem>
+                  {workUnits.map((unit) => (
+                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                      {unit.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -482,7 +484,7 @@ function UsersManagement() {
                   <Label className="text-right">Unit Kerja</Label>
                   <Select value={editingUser.workUnitId} onValueChange={(v) => setEditingUser({ ...editingUser, workUnitId: v })}>
                     <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-60 overflow-y-auto">
+                    <SelectContent>
                       {workUnits.map((unit) => (
                         <SelectItem key={unit.id} value={unit.id.toString()}>
                           {unit.name}
@@ -564,7 +566,7 @@ function UsersManagement() {
                 <Label className="text-right">Unit Kerja</Label>
                 <Select value={newUser.workUnitId} onValueChange={(v) => setNewUser({ ...newUser, workUnitId: v })}>
                   <SelectTrigger className="col-span-3"><SelectValue placeholder="Pilih Unit Kerja" /></SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
+                  <SelectContent className="max-h-80 overflow-y-auto">
                     {workUnits.map((unit) => (
                       <SelectItem key={unit.id} value={unit.id.toString()}>
                         {unit.name}
