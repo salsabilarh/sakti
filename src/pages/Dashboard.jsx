@@ -14,7 +14,7 @@ function Dashboard() {
     const injectBotpressScript = () => {
       return new Promise((resolve, reject) => {
         if (document.getElementById('botpress-webchat-script')) {
-          return resolve();
+          return resolve(); // Script sudah ada
         }
 
         const script = document.createElement('script');
@@ -31,36 +31,50 @@ function Dashboard() {
       try {
         await injectBotpressScript();
 
-        if (window.botpress && webchatRef.current) {
-          window.botpress.init({
-            botId: 'd07d2c58-86af-494a-ba32-cfc090caa171',
-            clientId: '42b065f3-6d14-4a80-8df0-bd92f56b3f53',
-            selector: '#webchat',
-            embedded: true,
-            configuration: {
-              version: 'v1',
-              color: '#3276EA',
-              variant: 'solid',
-              headerVariant: 'glass',
-              themeMode: 'light',
-              fontFamily: 'inter',
-              radius: 4,
-              feedbackEnabled: true,
-              footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
-            },
-          });
+        const initWebchat = () => {
+          if (window.botpress && document.querySelector('#webchat')) {
+            window.botpress.init({
+              botId: 'd07d2c58-86af-494a-ba32-cfc090caa171',
+              clientId: '42b065f3-6d14-4a80-8df0-bd92f56b3f53',
+              selector: '#webchat',
+              embedded: true,
+              configuration: {
+                version: 'v1',
+                color: '#3276EA',
+                variant: 'solid',
+                headerVariant: 'glass',
+                themeMode: 'light',
+                fontFamily: 'inter',
+                radius: 4,
+                feedbackEnabled: true,
+                footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
+              },
+            });
 
-          window.botpress.on('webchat:ready', () => {
-            window.botpress.open(); // Auto open on load
-          });
-        }
+            window.botpress.on('webchat:ready', () => {
+              window.botpress.open(); // Auto-open
+            });
+          }
+        };
+
+        // Pastikan init hanya jika elemen sudah ada
+        const interval = setInterval(() => {
+          if (document.querySelector('#webchat') && window.botpress) {
+            initWebchat();
+            clearInterval(interval);
+          }
+        }, 100);
+
+        // Timeout setelah 5 detik jika masih belum ready
+        setTimeout(() => clearInterval(interval), 5000);
+
       } catch (error) {
         console.error('Botpress initialization failed:', error);
       }
     };
 
     initializeBotpress();
-  }, []);
+  }, [location.pathname]);
 
   useEffect(() => {
     const style = document.createElement('style');

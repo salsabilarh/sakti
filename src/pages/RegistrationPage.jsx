@@ -244,7 +244,7 @@ const RegistrationPage = () => {
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="Pilih unit kerja" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-60 overflow-y-auto">
                           {workUnits.map((unit) => (
                             <SelectItem key={unit.id} value={unit.id.toString()}>
                               {unit.name}

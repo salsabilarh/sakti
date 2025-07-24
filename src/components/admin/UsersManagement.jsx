@@ -292,7 +292,7 @@ function UsersManagement() {
     }
   };
 
-  const workUnits = allUnits.map(unit => [unit.id, unit.name]);
+  const workUnits = allUnits;
 
   return (
     <>
@@ -482,10 +482,10 @@ function UsersManagement() {
                   <Label className="text-right">Unit Kerja</Label>
                   <Select value={editingUser.workUnitId} onValueChange={(v) => setEditingUser({ ...editingUser, workUnitId: v })}>
                     <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {workUnits.map(([id, name]) => (
-                        <SelectItem key={id} value={id}>
-                          {name}
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {workUnits.map((unit) => (
+                        <SelectItem key={unit.id} value={unit.id.toString()}>
+                          {unit.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -564,9 +564,11 @@ function UsersManagement() {
                 <Label className="text-right">Unit Kerja</Label>
                 <Select value={newUser.workUnitId} onValueChange={(v) => setNewUser({ ...newUser, workUnitId: v })}>
                   <SelectTrigger className="col-span-3"><SelectValue placeholder="Pilih Unit Kerja" /></SelectTrigger>
-                  <SelectContent>
-                    {workUnits.map(([id, name]) => (
-                      <SelectItem key={id} value={id}>{name}</SelectItem>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {workUnits.map((unit) => (
+                      <SelectItem key={unit.id} value={unit.id.toString()}>
+                        {unit.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
