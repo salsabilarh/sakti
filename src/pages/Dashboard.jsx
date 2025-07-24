@@ -2,19 +2,19 @@ import React, { useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
-import { useAuth, ROLES } from '@/contexts/AuthContext.jsx';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button.jsx';
+import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useLocation } from 'react-router-dom';
 
 function Dashboard() {
   const { user } = useAuth();
   const webchatRef = useRef(null);
+  const location = useLocation();
 
   useEffect(() => {
     const injectBotpressScript = () => {
       return new Promise((resolve, reject) => {
         if (document.getElementById('botpress-webchat-script')) {
-          return resolve(); // Script already injected
+          return resolve();
         }
 
         const script = document.createElement('script');
@@ -46,7 +46,7 @@ function Dashboard() {
               fontFamily: 'inter',
               radius: 4,
               feedbackEnabled: true,
-              footer: '[⚡ SAKTI Assisstant ](https://botpress.com/?from=webchat)',
+              footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
             },
           });
 
@@ -63,47 +63,48 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
-  const style = document.createElement('style');
-  style.innerHTML = `
-    /* Hapus scrollbar dari container utama */
-    #webchat .bpWebchat {
-      overflow: hidden !important;
-      max-height: none !important;
-    }
+    const style = document.createElement('style');
+    style.innerHTML = `
+      #webchat .bpWebchat {
+        overflow: hidden !important;
+        max-height: none !important;
+        border-radius: 0.75rem !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+      }
 
-    /* Batasi tinggi iframe */
-    #webchat .bpWebchat iframe {
-      width: 100% !important;
-      height: 100% !important;
-      min-height: 500px !important;
-      max-height: 600px !important;
-      border: none !important;
-    }
+      #webchat .bpWebchat iframe {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 500px !important;
+        max-height: 100% !important;
+        border: none !important;
+        border-radius: 0.75rem !important;
+      }
 
-    /* Fokus scroll hanya di riwayat pesan */
-    #webchat .bpWebchat .bp-conversation-container {
-      max-height: 500px !important;
-      overflow-y: auto !important;
-      padding-right: 8px;
-    }
+      #webchat .bp-conversation-container {
+        max-height: 100% !important;
+        overflow-y: auto !important;
+        padding-right: 8px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+      }
 
-    /* Sembunyikan FAB dan tombol close */
-    #webchat .bpFab, #webchat .bp-header .bp-close {
-      display: none !important;
-    }
+      #webchat .bp-conversation-container::-webkit-scrollbar {
+        width: 6px;
+      }
 
-    /* Scrollbar gaya halus */
-    #webchat .bp-conversation-container::-webkit-scrollbar {
-      width: 6px;
-    }
+      #webchat .bp-conversation-container::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+      }
 
-    #webchat .bp-conversation-container::-webkit-scrollbar-thumb {
-      background-color: rgba(0,0,0,0.2);
-      border-radius: 4px;
-    }
-  `;
-  document.head.appendChild(style);
-}, []);
+      #webchat .bpFab,
+      #webchat .bp-header .bp-close {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
 
   useEffect(() => {
     const handleFocus = () => {
@@ -115,6 +116,18 @@ function Dashboard() {
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isDashboard = location.pathname === '/dashboard';
+      if (document.visibilityState === 'visible' && isDashboard && window.botpress) {
+        window.botpress.open();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [location.pathname]);
 
   return (
     <>
@@ -170,12 +183,12 @@ function Dashboard() {
               <p className="text-gray-600">Tanyakan apa saja tentang layanan dan dokumentasi kami</p>
             </CardHeader>
             <CardContent>
-              <div className="relative w-full aspect-[16/9] overflow-auto max-h-[600px]">
+              <div className="relative w-full h-[500px] md:h-[600px] rounded-xl overflow-hidden border">
                 <div
                   ref={webchatRef}
                   id="webchat"
-                  className="absolute top-0 left-0 w-full h-full"
-                />
+                  className="absolute top-0 left-0 w-full h-full transition-all duration-500 ease-in-out"
+                ></div>
               </div>
             </CardContent>
           </Card>

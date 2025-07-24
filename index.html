@@ -8,7 +8,6 @@
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-		<script src="https://cdn.botpress.cloud/webchat/v3.1/inject.js"></script>
 		<style>
 		  #webchat .bpWebchat {
 		    position: unset;
@@ -28,24 +27,5 @@
 		<div id="root"></div>
 		<div id="webchat"></div>
 		<script type="module" src="/src/main.jsx"></script>
-		<script>
-		  window.botpress && window.botpress.on("webchat:ready", () => {
-		    window.botpress.open();
-		  });
-		  window.botpress && window.botpress.init({
-		    "botId": "d07d2c58-86af-494a-ba32-cfc090caa171",
-		    "configuration": {
-		      "version": "v1",
-		      "color": "#000476",
-		      "themeMode": "light",
-		      "fontFamily": "inter",
-		      "radius": 4,
-		      "feedbackEnabled": true,
-		    //   "footer": "[⚡ by Botpress](https://botpress.com/?from=webchat)"
-		    },
-		    "clientId": "42b065f3-6d14-4a80-8df0-bd92f56b3f53",
-		    "selector": "#webchat"
-		  });
-		</script>
 	</body>
 </html>
