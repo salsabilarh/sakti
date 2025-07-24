@@ -46,7 +46,7 @@ function Dashboard() {
               fontFamily: 'inter',
               radius: 4,
               feedbackEnabled: true,
-              footer: '[⚡ by Botpress](https://botpress.com/?from=webchat)',
+              footer: '[⚡ SAKTI Assisstant ](https://botpress.com/?from=webchat)',
             },
           });
 
@@ -63,29 +63,57 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = `
-      #webchat .bpWebchat {
-        position: static !important;
-        width: 100% !important;
-        height: auto !important;
-        max-width: 100% !important;
-        border-radius: 12px !important;
-        overflow: hidden;
-      }
+  const style = document.createElement('style');
+  style.innerHTML = `
+    /* Hapus scrollbar dari container utama */
+    #webchat .bpWebchat {
+      overflow: hidden !important;
+      max-height: none !important;
+    }
 
-      #webchat .bpWebchat iframe {
-        width: 100% !important;
-        height: 100% !important;
-        aspect-ratio: 16/9 !important;
-        border: none;
-      }
+    /* Batasi tinggi iframe */
+    #webchat .bpWebchat iframe {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 500px !important;
+      max-height: 600px !important;
+      border: none !important;
+    }
 
-      #webchat .bpFab {
-        display: none !important;
+    /* Fokus scroll hanya di riwayat pesan */
+    #webchat .bpWebchat .bp-conversation-container {
+      max-height: 500px !important;
+      overflow-y: auto !important;
+      padding-right: 8px;
+    }
+
+    /* Sembunyikan FAB dan tombol close */
+    #webchat .bpFab, #webchat .bp-header .bp-close {
+      display: none !important;
+    }
+
+    /* Scrollbar gaya halus */
+    #webchat .bp-conversation-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #webchat .bp-conversation-container::-webkit-scrollbar-thumb {
+      background-color: rgba(0,0,0,0.2);
+      border-radius: 4px;
+    }
+  `;
+  document.head.appendChild(style);
+}, []);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (window.botpress) {
+        window.botpress.open();
       }
-    `;
-    document.head.appendChild(style);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   return (
@@ -142,7 +170,7 @@ function Dashboard() {
               <p className="text-gray-600">Tanyakan apa saja tentang layanan dan dokumentasi kami</p>
             </CardHeader>
             <CardContent>
-              <div className="relative w-full aspect-[16/9] sm:aspect-[4/3] max-h-[600px] overflow-hidden">
+              <div className="relative w-full aspect-[16/9] overflow-auto max-h-[600px]">
                 <div
                   ref={webchatRef}
                   id="webchat"

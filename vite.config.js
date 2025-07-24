@@ -196,10 +196,11 @@ export default defineConfig({
 		react(),
 		addTransformIndexHtml
 	],
-	server: {
+	sserver: {
 		cors: true,
 		headers: {
 			'Cross-Origin-Embedder-Policy': 'credentialless',
+			'Content-Security-Policy': "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; script-src 'self' https://www.youtube.com https://s.ytimg.com;"
 		},
 		allowedHosts: true,
 	},

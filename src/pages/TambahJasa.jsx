@@ -61,16 +61,26 @@ function TambahJasa() {
 
   const getYoutubeEmbedUrl = (url) => {
     try {
-      const urlObj = new URL(url);
-      const videoId = urlObj.searchParams.get("v");
-      if (videoId) {
-        return `https://www.youtube.com/embed/${videoId}`;
+      // Handle youtu.be short links
+      if (url.includes('youtu.be')) {
+        const videoId = url.split('youtu.be/')[1].split(/[?&#]/)[0];
+        return `https://www.youtube-nocookie.com/embed/${videoId}`;
       }
-      // Handle shortened youtu.be links
-      if (urlObj.hostname === 'youtu.be') {
-        return `https://www.youtube.com/embed${urlObj.pathname}`;
+      
+      // Handle regular youtube.com links
+      const parsedUrl = new URL(url);
+      let videoId = parsedUrl.searchParams.get('v');
+      
+      // Handle YouTube share links
+      if (!videoId && parsedUrl.pathname.includes('/shorts/')) {
+        videoId = parsedUrl.pathname.split('/shorts/')[1];
+      }
+      
+      if (videoId) {
+        return `https://www.youtube-nocookie.com/embed/${videoId.split(/[?&#]/)[0]}`;
       }
     } catch (err) {
+      console.error('Invalid YouTube URL:', err);
       return null;
     }
     return null;
@@ -389,16 +399,11 @@ function TambahJasa() {
 
               <div>
                 <label className="font-medium block">Link Video Intro</label>
-                <Input name="intro_video_url" value={form.intro_video_url} onChange={handleChange} />
-                {form.intro_video_url && getYoutubeEmbedUrl(form.intro_video_url) && (
-                  <iframe
-                    src={getYoutubeEmbedUrl(form.intro_video_url)}
-                    title="Video Preview"
-                    className="w-full h-52 border mt-2"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                )}
+                <Input 
+                  name="intro_video_url" 
+                  value={form.intro_video_url} 
+                  onChange={handleChange}
+                />
               </div>
 
               <div>

@@ -6,15 +6,15 @@ import { cn } from '@/lib/utils';
 import { useAuth, ROLES } from '@/contexts/AuthContext';
 
 const navConfig = {
-  [ROLES.ADMIN]: ['Dashboard', 'Daftar Jasa', 'Marketing Kit', 'Admin Panel'],
-  [ROLES.MANAJEMEN]: ['Dashboard', 'Daftar Jasa', 'Marketing Kit'],
-  [ROLES.PDO]: ['Dashboard', 'Daftar Jasa', 'Marketing Kit'],
-  [ROLES.VIEWER]: ['Dashboard', 'Daftar Jasa'],
+  [ROLES.ADMIN]: ['Dashboard', 'Daftar Layanan', 'Marketing Kit', 'Admin Panel'],
+  [ROLES.MANAJEMEN]: ['Dashboard', 'Daftar Layanan', 'Marketing Kit'],
+  [ROLES.PDO]: ['Dashboard', 'Daftar Layanan', 'Marketing Kit'],
+  [ROLES.VIEWER]: ['Dashboard', 'Daftar Layanan'],
 };
 
 const allNavigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Daftar Jasa', href: '/daftar-jasa', icon: Briefcase },
+  { name: 'Daftar Layanan', href: '/daftar-jasa', icon: Briefcase },
   { name: 'Marketing Kit', href: '/marketing-kit', icon: FolderDown },
   { name: 'Admin Panel', href: '/admin', icon: ShieldCheck },
 ];
