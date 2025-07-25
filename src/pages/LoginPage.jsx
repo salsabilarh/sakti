@@ -165,7 +165,7 @@ function LoginPage() {
             <div className="text-center">
               <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png" alt="SAKTI Logo" className="h-20 mx-auto mb-8" />
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Sistem Analitik & Katalog Terintegrasi
+                Sistem Akses Kilat Terpadu Informasi Jasa
               </h3>
               <p className="text-gray-600 max-w-md mx-auto">
                 Platform terpadu untuk mengelola layanan dan dokumentasi dengan mudah dan efisien

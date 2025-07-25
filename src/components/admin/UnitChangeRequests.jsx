@@ -91,8 +91,8 @@ const UnitChangeRequestPage = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      Tidak ada permintaan
+                    <TableCell colSpan={6} className="text-center text-gray-500 py-6">
+                      Tidak ada permintaan perubahan unit kerja
                     </TableCell>
                   </TableRow>
                 )}

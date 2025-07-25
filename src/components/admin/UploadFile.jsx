@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 function UploadFile({ onUploadSuccess, onClose }) {
   const [uploadFile, setUploadFile] = useState(null);
   const [fileType, setFileType] = useState('');
-  const [serviceId, setServiceId] = useState('');
+  const [serviceIds, setServiceIds] = useState([]); // multiple
   const [open, setOpen] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,14 +22,13 @@ function UploadFile({ onUploadSuccess, onClose }) {
   const { authToken } = useAuth();
   const [services, setServices] = useState([]);
   const [name, setName] = useState('');
+  const [openPopover, setOpenPopover] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
       try {
         const res = await fetch('https://api-sakti-production.up.railway.app/api/services', {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+          headers: { Authorization: `Bearer ${authToken}` }
         });
         const data = await res.json();
         setServices(data.services || []);
@@ -43,7 +42,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
   const handleFileUpload = async (e) => {
     e.preventDefault();
     setUploadedFileUrl('');
-    if (!uploadFile || !fileType || !serviceId) {
+    if (!uploadFile || !fileType || serviceIds.length === 0) {
       toast({
         title: 'Form tidak lengkap',
         description: 'Mohon lengkapi semua field yang diperlukan',
@@ -56,7 +55,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
     formData.append('name', name);
     formData.append('file', uploadFile);
     formData.append('file_type', fileType);
-    formData.append('service_id', serviceId);
+    serviceIds.forEach(id => formData.append('service_ids[]', id));
 
     setLoading(true);
 
@@ -80,11 +79,11 @@ function UploadFile({ onUploadSuccess, onClose }) {
       setUploadedFileUrl(result.marketing_kit?.file_url || '');
       setUploadFile(null);
       setFileType('');
-      setServiceId('');
+      setServiceIds([]);
       setName('');
       e.target.reset?.();
       onUploadSuccess?.();
-      onClose?.(); // 🔒 Tutup form/modal setelah berhasil upload
+      onClose?.();
     } catch (error) {
       console.error('Upload error:', error);
       toast({
@@ -105,26 +104,15 @@ function UploadFile({ onUploadSuccess, onClose }) {
       <CardContent>
         <form onSubmit={handleFileUpload} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
+            {/* Multi-select Services */}
             <div>
-              <Label>Nama Layanan</Label>
-              <Popover open={open} onOpenChange={setOpen}>
+              <Label>Layanan Terkait</Label>
+              <Popover open={openPopover} onOpenChange={setOpenPopover}>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between flex items-center min-w-0"
-                  >
-                    <span
-                      className="truncate text-left"
-                      title={
-                        serviceId
-                          ? services.find(s => s.id.toString() === serviceId)?.name
-                          : 'Pilih layanan...'
-                      }
-                    >
-                      {serviceId
-                        ? services.find(s => s.id.toString() === serviceId)?.name
-                        : "Pilih layanan..."}
-                    </span>
+                  <Button variant="outline" className="w-full justify-between">
+                    {serviceIds.length > 0
+                      ? `${serviceIds.length} layanan dipilih`
+                      : "Pilih layanan..."}
                     <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -134,25 +122,38 @@ function UploadFile({ onUploadSuccess, onClose }) {
                     <CommandList>
                       <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
-                        {services.map(service => (
-                          <CommandItem
-                            key={service.id}
-                            value={service.id.toString()}
-                            onSelect={(val) => {
-                              setServiceId(val);
-                              setOpen(false);
-                            }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", serviceId === service.id.toString() ? "opacity-100" : "opacity-0")} />
-                            {service.name}
-                          </CommandItem>
-                        ))}
+                        {services.map((service) => {
+                          const isSelected = serviceIds.includes(service.id.toString());
+                          return (
+                            <CommandItem
+                              key={service.id}
+                              value={service.id.toString()}
+                              onSelect={() => {
+                                setServiceIds((prev) =>
+                                  isSelected
+                                    ? prev.filter((id) => id !== service.id.toString())
+                                    : [...prev, service.id.toString()]
+                                );
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  isSelected ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {service.name}
+                            </CommandItem>
+                          );
+                        })}
                       </CommandGroup>
                     </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
             </div>
+
+            {/* File Type */}
             <div>
               <Label htmlFor="fileType">Tipe File</Label>
               <Select onValueChange={setFileType} value={fileType}>
@@ -163,13 +164,13 @@ function UploadFile({ onUploadSuccess, onClose }) {
                   <SelectItem value="Flyer">Flyer</SelectItem>
                   <SelectItem value="Pitch Deck">Pitch Deck</SelectItem>
                   <SelectItem value="Brochure">Brochure</SelectItem>
-                  <SelectItem value="Case Study">Case Study</SelectItem>
-                  <SelectItem value="Lainnya">Lainnya</SelectItem>
+                  <SelectItem value="Technical Document">Technical Document</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
+          {/* Nama File */}
           <div>
             <Label htmlFor="name">Nama File</Label>
             <Input
@@ -182,6 +183,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
             />
           </div>
 
+          {/* File Upload */}
           <div>
             <Label htmlFor="file">Pilih File</Label>
             <Input

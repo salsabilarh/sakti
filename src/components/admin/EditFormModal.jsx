@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Check, Save } from 'lucide-react';
+import { Save, Check, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { useToast } from '@/components/ui/use-toast';
-import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -16,12 +10,34 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
+} from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 
 function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdateSuccess }) {
   const [uploadFile, setUploadFile] = useState(null);
-  const [fileType, setFileType] = useState(file?.file_type || '');
-  const [serviceId, setServiceId] = useState(file?.service?.id?.toString() || '');
-  const [name, setName] = useState(file?.name || '');
+  const [fileType, setFileType] = useState('');
+  const [serviceIds, setServiceIds] = useState([]); // support multiple
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [openPopover, setOpenPopover] = useState(false);
   const { toast } = useToast();
@@ -29,7 +45,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
   useEffect(() => {
     if (file) {
       setFileType(file.file_type || '');
-      setServiceId(file.service?.id?.toString() || '');
+      setServiceIds(file.services?.map(s => s.id.toString()) || []);
       setName(file.name || '');
       setUploadFile(null);
     }
@@ -37,7 +53,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!name || !fileType || !serviceId) {
+    if (!name || !fileType || serviceIds.length === 0) {
       toast({
         title: 'Form tidak lengkap',
         description: 'Mohon lengkapi semua field yang diperlukan',
@@ -49,7 +65,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
     const formData = new FormData();
     formData.append('name', name);
     formData.append('file_type', fileType);
-    formData.append('service_id', serviceId);
+    serviceIds.forEach(id => formData.append('service_ids[]', id));
     if (uploadFile) formData.append('file', uploadFile);
 
     setLoading(true);
@@ -82,7 +98,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
       setLoading(false);
     }
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -93,17 +109,41 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
 
         <form onSubmit={handleUpdate} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
+            {/* Multi-select Services */}
             <div>
-              <Label>Nama Layanan</Label>
+              <Label>Layanan Terkait</Label>
               <Popover open={openPopover} onOpenChange={setOpenPopover}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    <span className="truncate text-left">
-                      {serviceId
-                        ? services.find(s => s.id.toString() === serviceId)?.name
-                        : "Pilih layanan..."}
-                    </span>
-                    <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <Button
+                    variant="outline"
+                    className="w-full flex-wrap justify-start gap-2 text-left min-h-[2.5rem]"
+                  >
+                    {serviceIds.length > 0 ? (
+                      services
+                        .filter(s => serviceIds.includes(s.id.toString()))
+                        .map(s => (
+                          <span
+                            key={s.id}
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 mr-1"
+                          >
+                            {s.code}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setServiceIds(prev => prev.filter(id => id !== s.id.toString()));
+                              }}
+                              className="ml-1 text-red-600 hover:text-red-800 font-bold"
+                              title="Hapus"
+                            >
+                              &times;
+                            </button>
+                          </span>
+                        ))
+                    ) : (
+                      <span className="text-muted-foreground">Pilih layanan...</span>
+                    )}
+                    <Search className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="min-w-full max-w-sm p-0">
@@ -112,19 +152,30 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                     <CommandList>
                       <CommandEmpty>Tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
-                        {services.map(service => (
-                          <CommandItem
-                            key={service.id}
-                            value={service.id.toString()}
-                            onSelect={(val) => {
-                              setServiceId(val);
-                              setOpenPopover(false);
-                            }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", serviceId === service.id.toString() ? "opacity-100" : "opacity-0")} />
-                            {service.name}
-                          </CommandItem>
-                        ))}
+                        {services.map(service => {
+                          const isSelected = serviceIds.includes(service.id.toString());
+                          return (
+                            <CommandItem
+                              key={service.id}
+                              value={service.id.toString()}
+                              onSelect={() => {
+                                setServiceIds(prev =>
+                                  isSelected
+                                    ? prev.filter(id => id !== service.id.toString())
+                                    : [...prev, service.id.toString()]
+                                );
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  isSelected ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {service.name}
+                            </CommandItem>
+                          );
+                        })}
                       </CommandGroup>
                     </CommandList>
                   </Command>
@@ -132,6 +183,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
               </Popover>
             </div>
 
+            {/* File Type */}
             <div>
               <Label>Tipe File</Label>
               <Select onValueChange={setFileType} value={fileType}>
@@ -142,13 +194,13 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                   <SelectItem value="Flyer">Flyer</SelectItem>
                   <SelectItem value="Pitch Deck">Pitch Deck</SelectItem>
                   <SelectItem value="Brochure">Brochure</SelectItem>
-                  <SelectItem value="Case Study">Case Study</SelectItem>
-                  <SelectItem value="Lainnya">Lainnya</SelectItem>
+                  <SelectItem value="Technical Document">Technical Document</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
+          {/* File Name */}
           <div>
             <Label>Nama File</Label>
             <Input
@@ -159,6 +211,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
             />
           </div>
 
+          {/* Upload Baru */}
           <div>
             <Label>Upload File Baru (opsional)</Label>
             <Input
@@ -171,6 +224,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
             </p>
           </div>
 
+          {/* Tombol Aksi */}
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Batal
@@ -191,4 +245,3 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
 }
 
 export default EditFormModal;
-
