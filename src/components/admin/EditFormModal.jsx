@@ -45,11 +45,18 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
   useEffect(() => {
     if (file) {
       setFileType(file.file_type || '');
-      setServiceIds(file.services?.map(s => s.id.toString()) || []);
+      // Perbaikan: Pastikan semua service yang terkait dengan file ditampilkan
+      const fileServiceIds = file.services?.map(s => s.id.toString()) || [];
+      setServiceIds(fileServiceIds);
       setName(file.name || '');
       setUploadFile(null);
+      
+      // Debug log untuk memastikan data service tersedia
+      console.log('File services:', file.services);
+      console.log('Available services:', services);
+      console.log('Selected service IDs:', fileServiceIds);
     }
-  }, [file]);
+  }, [file, services]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -99,6 +106,15 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
     }
   };
 
+  // Fungsi untuk mendapatkan service berdasarkan ID
+  const getServiceById = (id) => {
+    const fromGlobal = services.find(s => s.id.toString() === id.toString());
+    if (fromGlobal) return fromGlobal;
+
+    // Fallback ke data `file.services` kalau tidak ditemukan di daftar global
+    return file?.services?.find(s => s.id.toString() === id.toString());
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -119,19 +135,20 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                     className="w-full flex-wrap justify-start gap-2 text-left min-h-[2.5rem]"
                   >
                     {serviceIds.length > 0 ? (
-                      services
-                        .filter(s => serviceIds.includes(s.id.toString()))
-                        .map(s => (
+                      serviceIds.map(id => {
+                        const service = getServiceById(id);
+                        if (!service) return null;
+                        return (
                           <span
-                            key={s.id}
+                            key={service.id}
                             className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 mr-1"
                           >
-                            {s.code}
+                            {service.code || service.name}
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setServiceIds(prev => prev.filter(id => id !== s.id.toString()));
+                                setServiceIds(prev => prev.filter(serviceId => serviceId !== service.id.toString()));
                               }}
                               className="ml-1 text-red-600 hover:text-red-800 font-bold"
                               title="Hapus"
@@ -139,7 +156,8 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                               &times;
                             </button>
                           </span>
-                        ))
+                        );
+                      })
                     ) : (
                       <span className="text-muted-foreground">Pilih layanan...</span>
                     )}
@@ -157,7 +175,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                           return (
                             <CommandItem
                               key={service.id}
-                              value={service.id.toString()}
+                              value={`${service.id}-${service.name}-${service.code || ''}`}
                               onSelect={() => {
                                 setServiceIds(prev =>
                                   isSelected
@@ -172,7 +190,12 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                                   isSelected ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {service.name}
+                              <div className="flex flex-col">
+                                <span className="font-medium">{service.name}</span>
+                                {service.code && (
+                                  <span className="text-xs text-gray-500">{service.code}</span>
+                                )}
+                              </div>
                             </CommandItem>
                           );
                         })}
@@ -211,17 +234,40 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
             />
           </div>
 
-          {/* Upload Baru */}
+          {/* Pilih File */}
           <div>
-            <Label>Upload File Baru (opsional)</Label>
+            <Label htmlFor="upload">Pilih File</Label>
             <Input
               type="file"
+              id="upload"
               onChange={(e) => setUploadFile(e.target.files[0])}
               accept=".pdf,.doc,.docx,.ppt,.pptx"
             />
             <p className="text-sm text-gray-500 mt-1">
-              Kosongkan jika tidak ingin mengganti file.
+              Format yang didukung: PDF, DOC, DOCX, PPT, PPTX
             </p>
+
+            {/* Menampilkan file sebelumnya jika tidak sedang mengganti file */}
+            {file?.file_path && !uploadFile && (
+              <p className="text-sm text-blue-600 mt-2">
+                File sebelumnya:{' '}
+                <a
+                  href={file.file_path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-blue-800"
+                >
+                  {file.name}
+                </a>
+              </p>
+            )}
+
+            {/* Menampilkan nama file baru yang dipilih */}
+            {uploadFile && (
+              <p className="text-sm text-green-600 mt-2">
+                File baru: {uploadFile.name}
+              </p>
+            )}
           </div>
 
           {/* Tombol Aksi */}

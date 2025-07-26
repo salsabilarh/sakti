@@ -106,48 +106,81 @@ function UploadFile({ onUploadSuccess, onClose }) {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Multi-select Services */}
             <div>
-              <Label>Layanan Terkait</Label>
-              <Popover open={openPopover} onOpenChange={setOpenPopover}>
+              <Label htmlFor="services">Layanan Terkait</Label>
+              <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {serviceIds.length > 0
-                      ? `${serviceIds.length} layanan dipilih`
-                      : "Pilih layanan..."}
-                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="min-w-full max-w-sm p-0">
-                  <Command>
-                    <CommandInput placeholder="Cari layanan..." />
-                    <CommandList>
-                      <CommandEmpty>Tidak ditemukan.</CommandEmpty>
-                      <CommandGroup>
-                        {services.map((service) => {
-                          const isSelected = serviceIds.includes(service.id.toString());
-                          return (
-                            <CommandItem
-                              key={service.id}
-                              value={service.id.toString()}
-                              onSelect={() => {
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full flex-wrap justify-start gap-2 text-left min-h-[2.5rem]"
+                  >
+                    {serviceIds.length > 0 ? (
+                      serviceIds.map((id) => {
+                        const service = services.find((s) => s.id.toString() === id.toString());
+                        if (!service) return null;
+                        return (
+                          <span
+                            key={service.id}
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 mr-1"
+                          >
+                            {service.code ? `${service.code} - ${service.name}` : service.name}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setServiceIds((prev) =>
-                                  isSelected
-                                    ? prev.filter((id) => id !== service.id.toString())
-                                    : [...prev, service.id.toString()]
+                                  prev.filter((serviceId) => serviceId !== service.id.toString())
                                 );
                               }}
+                              className="ml-1 text-red-600 hover:text-red-800 font-bold"
+                              title="Hapus"
                             >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  isSelected ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {service.name}
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandGroup>
-                    </CommandList>
+                              &times;
+                            </button>
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="text-muted-foreground">Pilih layanan...</span>
+                    )}
+                    <Search className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Cari layanan..." />
+                    <CommandEmpty>Layanan tidak ditemukan.</CommandEmpty>
+                    <CommandGroup className="max-h-64 overflow-auto">
+                      {services.map((service) => {
+                        const isSelected = serviceIds.includes(service.id.toString());
+                        return (
+                          <CommandItem
+                            key={service.id}
+                            value={service.id.toString()}
+                            onSelect={() => {
+                              setServiceIds((prev) =>
+                                isSelected
+                                  ? prev.filter((id) => id !== service.id.toString())
+                                  : [...prev, service.id.toString()]
+                              );
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                isSelected ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span className="font-medium">{service.name}</span>
+                              {service.code && (
+                                <span className="text-xs text-gray-500">{service.code}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
                   </Command>
                 </PopoverContent>
               </Popover>

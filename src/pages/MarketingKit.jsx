@@ -100,9 +100,11 @@ function MarketingKit() {
     return kits.filter(kit => {
       const matchesSearch =
         kit.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        kit.service?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+        (kit.services || []).some(s =>
+          s.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
       const matchesPortfolio = !selectedPortfolio || kit.file_type === selectedPortfolio;
-      const matchesService = !selectedService || kit.service?.id?.toString() === selectedService;
+      const matchesService = !selectedService || (kit.services || []).some(s => s.id.toString() === selectedService);
       return matchesSearch && matchesPortfolio && matchesService;
     });
   }, [kits, searchTerm, selectedPortfolio, selectedService]);
@@ -291,7 +293,7 @@ function MarketingKit() {
                                 key={service.id}
                                 className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium"
                               >
-                                {service.code} - {service.name}
+                                {service.code}
                               </span>
                             ))}
                           </div>
