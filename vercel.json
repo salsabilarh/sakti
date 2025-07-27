@@ -1,0 +1,13 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://cdn.botpress.cloud; connect-src *; img-src * data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com;"
+        }
+      ]
+    }
+  ]
+}
