@@ -31,57 +31,80 @@ function Dashboard() {
       try {
         await injectBotpressScript();
 
-        const initWebchat = () => {
-          if (window.botpress && document.querySelector('#webchat')) {
-            window.botpress.init({
-              botId: 'd07d2c58-86af-494a-ba32-cfc090caa171',
-              clientId: '42b065f3-6d14-4a80-8df0-bd92f56b3f53',
-              selector: '#webchat',
-              embedded: true,
-              configuration: {
-                version: 'v1',
-                color: '#3276EA',
-                variant: 'solid',
-                headerVariant: 'glass',
-                themeMode: 'light',
-                fontFamily: 'inter',
-                radius: 4,
-                feedbackEnabled: true,
-                footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
+        const container = document.querySelector('#webchat');
+
+        // Hapus iframe lama jika ada (prevent double rendering)
+        const oldIframe = container?.querySelector('iframe');
+        if (oldIframe) container.innerHTML = '';
+
+        // Jika botpress sudah dimuat
+        if (window.botpress && container) {
+          window.botpress.init({
+            botId: 'ca0e2a53-b7b1-4b4d-90e2-7b93d67b28e0',
+            clientId: '48967a19-c892-47f0-8f46-e7cfd3153a98',
+            selector: '#webchat',
+            configuration: {
+              version: 'v1',
+              composerPlaceholder: '',
+              botName: 'SAKTI Assistant',
+              botAvatar: 'https://files.bpcontent.cloud/2025/07/27/09/20250727092708-YXL6QMAF.png',
+              color: '#3276EA',
+              variant: 'solid',
+              headerVariant: 'glass',
+              themeMode: 'light',
+              fontFamily: 'inter',
+              radius: 4,
+              feedbackEnabled: false,
+              footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
+              email: {
+                title: 'm.alfarisi@sucofindo.co.id',
+                link: 'm.alfarisi@sucofindo.co.id',
               },
-            });
+            },
+          });
 
-            window.botpress.on('webchat:ready', () => {
-              window.botpress.open(); // Auto-open
-            });
-          }
-        };
-
-        // Pastikan init hanya jika elemen sudah ada
-        const interval = setInterval(() => {
-          if (document.querySelector('#webchat') && window.botpress) {
-            initWebchat();
-            clearInterval(interval);
-          }
-        }, 100);
-
-        // Timeout setelah 5 detik jika masih belum ready
-        setTimeout(() => clearInterval(interval), 5000);
-
+          // Setelah inisialisasi, buka otomatis
+          window.botpress.on('webchat:ready', () => {
+            window.botpress.open();
+          });
+        }
       } catch (error) {
-        console.error('Botpress initialization failed:', error);
+        console.error('Botpress failed to initialize:', error);
       }
     };
 
-    initializeBotpress();
+    // Trigger ulang setiap kali ke halaman /dashboard
+    if (location.pathname === '/dashboard') {
+      initializeBotpress();
+    }
+
+    return () => {
+      // Optional: hapus konten webchat saat keluar dari dashboard
+      if (location.pathname !== '/dashboard') {
+        const el = document.querySelector('#webchat');
+        if (el) el.innerHTML = '';
+      }
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const isDashboard = location.pathname === '/dashboard';
+    const el = document.querySelector('#webchat');
+
+    if (!isDashboard && el) {
+      el.innerHTML = ''; // hapus iframe saat keluar dari dashboard
+    }
   }, [location.pathname]);
 
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
       #webchat .bpWebchat {
-        overflow: hidden !important;
-        max-height: none !important;
+        position: unset !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        max-width: 100% !important;
         border-radius: 0.75rem !important;
         box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
       }
@@ -89,27 +112,8 @@ function Dashboard() {
       #webchat .bpWebchat iframe {
         width: 100% !important;
         height: 100% !important;
-        min-height: 500px !important;
-        max-height: 100% !important;
         border: none !important;
         border-radius: 0.75rem !important;
-      }
-
-      #webchat .bp-conversation-container {
-        max-height: 100% !important;
-        overflow-y: auto !important;
-        padding-right: 8px;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-      }
-
-      #webchat .bp-conversation-container::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      #webchat .bp-conversation-container::-webkit-scrollbar-thumb {
-        background-color: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
       }
 
       #webchat .bpFab,
