@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 
 function DaftarJasa() {
   const {user, authToken } = useAuth();
@@ -28,6 +29,8 @@ function DaftarJasa() {
   const [total, setTotal] = useState(0);
   const [portfolioList, setPortfolioList] = useState([]);
   const [sectorList, setSectorList] = useState([]);
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
   const cannotEdit = user?.role === 'viewer' || user?.role === 'pdo' || user?.unit?.type === 'cabang';
   const canViewDetail = !!user; // Selama user terautentikasi, bisa lihat detail
 
@@ -70,6 +73,8 @@ function DaftarJasa() {
         if (searchTerm) params.append('search', searchTerm);
         if (selectedPortfolioId) params.append('portfolio', selectedPortfolioId);
         if (selectedSectorId) params.append('sector', selectedSectorId);
+        if (sortBy) params.append('sort', sortBy);
+        if (sortOrder) params.append('order', sortOrder);
         params.append('page', page);
         params.append('limit', limit);
 
@@ -97,7 +102,7 @@ function DaftarJasa() {
     if (authToken) {
       fetchServices();
     }
-  }, [searchTerm, selectedPortfolioId, selectedSectorId, page, limit, authToken]);
+  }, [searchTerm, selectedPortfolioId, selectedSectorId, page, limit, sortBy, sortOrder, authToken]);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -107,6 +112,17 @@ function DaftarJasa() {
   };
 
   const totalPages = Math.ceil(total / limit);
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      // toggle antara desc dan asc
+      setSortOrder((prevOrder) => (prevOrder === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortOrder('asc'); // default klik pertama: asc
+    }
+    setPage(1); // reset ke halaman 1 saat sort berubah
+  };
 
   const handleDelete = async (id) => {
     const confirm = window.confirm('Apakah Anda yakin ingin menghapus layanan ini?');
@@ -133,6 +149,17 @@ function DaftarJasa() {
       console.error('Gagal menghapus layanan:', error.message);
       alert(`Gagal menghapus layanan: ${error.message}`);
     }
+  };
+
+  const renderSortIcon = (field) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="w-4 h-4 ml-1 text-gray-400" />;
+    }
+    return sortOrder === 'asc' ? (
+      <ChevronUp className="w-4 h-4 ml-1 text-gray-600" />
+    ) : (
+      <ChevronDown className="w-4 h-4 ml-1 text-gray-600" />
+    );
   };
 
   return (
@@ -235,12 +262,31 @@ function DaftarJasa() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>No</TableHead>
-                    <TableHead>Nama Layanan</TableHead>
-                    <TableHead>Kode</TableHead>
-                    <TableHead>Sub-Portfolio</TableHead>
-                    <TableHead>Portfolio</TableHead>
-                    <TableHead>Sektor</TableHead>
+                    <TableHead onClick={() => handleSort('name')} className="cursor-pointer select-none">
+                      <div className="flex items-center">
+                        Nama Layanan {renderSortIcon('name')}
+                      </div>
+                    </TableHead>
+
+                    <TableHead>
+                      <div className="flex items-center">Kode</div>
+                    </TableHead>
+
+                    <TableHead>
+                      <div className="flex items-center">Sub-Portfolio</div>
+                    </TableHead>
+
+                    <TableHead onClick={() => handleSort('portfolio')} className="cursor-pointer select-none">
+                      <div className="flex items-center">
+                        Portfolio {renderSortIcon('portfolio')}
+                      </div>
+                    </TableHead>
+
+                    <TableHead onClick={() => handleSort('sector')} className="cursor-pointer select-none">
+                      <div className="flex items-center">
+                        Sektor {renderSortIcon('sector')}
+                      </div>
+                    </TableHead>
                     <TableHead className="text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -253,7 +299,6 @@ function DaftarJasa() {
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       className="hover:bg-gray-50"
                     >
-                      <TableCell className="font-medium text-gray-900">{index + 1}.</TableCell>
                       <TableCell className="font-medium text-gray-900">{service.name}</TableCell>
                       <TableCell><code className="bg-gray-100 px-2 py-1 rounded text-sm">{service.code}</code></TableCell>
                       <TableCell>{service.subPortfolio || '-'}</TableCell>
