@@ -288,14 +288,19 @@ function MarketingKit() {
                       <TableCell>
                         {kit.services && kit.services.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
-                            {kit.services.map(service => (
+                            {kit.services.slice(0, 3).map(service => (
                               <span
                                 key={service.id}
                                 className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium"
                               >
-                                {service.code}
+                                {service.code} - {service.name}
                               </span>
                             ))}
+                            {kit.services.length > 3 && (
+                              <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-medium">
+                                +{kit.services.length - 3}
+                              </span>
+                            )}
                           </div>
                         ) : (
                           '-'
