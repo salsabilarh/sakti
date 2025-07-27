@@ -12,8 +12,8 @@ import { Eye, EyeOff } from 'lucide-react';
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ function LoginPage() {
               fontFamily: "inter",
               radius: 4,
               feedbackEnabled: false,
-              footer: "[⚡ by Botpress](https://botpress.com/?from=webchat)"
+              footer: "[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)"
             },
             clientId: "48967a19-c892-47f0-8f46-e7cfd3153a98",
             selector: selector
@@ -116,7 +116,7 @@ function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="nama@perusahaan.com" value={email} onChange={e => setEmail(e.target.value)} required className="h-11" />
+                <Input id="email" type="email" placeholder="nama@sucofindo.com" value={email} onChange={e => setEmail(e.target.value)} required className="h-11" />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -124,8 +124,19 @@ function LoginPage() {
                   <Link to="/forgot-password" className="text-sm text-[#000476] hover:underline">Lupa Password?</Link>
                 </div>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? 'text' : 'password'} placeholder="Masukkan password" value={password} onChange={e => setPassword(e.target.value)} required className="h-11 pr-10" />
-                  <div onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Masukkan password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="h-11 pr-10"
+                  />
+                  <div
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                  >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </div>
                 </div>

@@ -95,6 +95,20 @@ function AppRoutes() {
           </DashboardLayout>
         </ProtectedRoute>
       } />
+      {/* <Route path="/kelola-portofolio" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <KelolaPortfolio />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/kelola-sektor" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <KelolaSektor />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } /> */}
       <Route path="/marketing-kit" element={
         <ProtectedRoute>
           <RoleProtectedRoute allowedRoles={['admin', 'manajemen', 'pdo']}>
