@@ -5,8 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 function UploadFile({ onUploadSuccess, onClose }) {
   const [uploadFile, setUploadFile] = useState(null);
   const [fileType, setFileType] = useState('');
-  const [serviceIds, setServiceIds] = useState([]); // multiple
+  const [serviceIds, setServiceIds] = useState([]);
   const [open, setOpen] = useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,7 +35,6 @@ function UploadFile({ onUploadSuccess, onClose }) {
   const { authToken } = useAuth();
   const [services, setServices] = useState([]);
   const [name, setName] = useState('');
-  const [openPopover, setOpenPopover] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -146,41 +158,40 @@ function UploadFile({ onUploadSuccess, onClose }) {
                     <Search className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0">
+                <PopoverContent className="min-w-full max-w-sm p-0">
                   <Command>
                     <CommandInput placeholder="Cari layanan..." />
-                    <CommandEmpty>Layanan tidak ditemukan.</CommandEmpty>
-                    <CommandGroup className="max-h-64 overflow-auto">
-                      {services.map((service) => {
-                        const isSelected = serviceIds.includes(service.id.toString());
-                        return (
-                          <CommandItem
-                            key={service.id}
-                            value={service.id.toString()}
-                            onSelect={() => {
-                              setServiceIds((prev) =>
-                                isSelected
-                                  ? prev.filter((id) => id !== service.id.toString())
-                                  : [...prev, service.id.toString()]
-                              );
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                isSelected ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            <div className="flex flex-col">
-                              <span className="font-medium">{service.name}</span>
-                              {service.code && (
-                                <span className="text-xs text-gray-500">{service.code}</span>
-                              )}
-                            </div>
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
+                    <CommandList>
+                      <CommandEmpty>Layanan tidak ditemukan.</CommandEmpty>
+                      <CommandGroup>
+                        {services.map((service) => {
+                          const isSelected = serviceIds.includes(service.id.toString());
+                          return (
+                            <CommandItem
+                              key={service.id}
+                              value={`${service.id}-${service.name}-${service.code || ''}`}
+                              onSelect={() => {
+                                setServiceIds((prev) =>
+                                  isSelected
+                                    ? prev.filter((id) => id !== service.id.toString())
+                                    : [...prev, service.id.toString()]
+                                );
+                              }}
+                            >
+                              <Check
+                                className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{service.name}</span>
+                                {service.code && (
+                                  <span className="text-xs text-gray-500">{service.code}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
