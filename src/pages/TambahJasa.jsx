@@ -14,6 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 function TambahJasa() {
   const { authToken, user } = useAuth();
@@ -379,6 +381,15 @@ function TambahJasa() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Tambah Layanan Baru</h1>
+
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+        <Link to="/daftar-jasa">
+          <Button variant="outline" className="mb-6">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Kembali ke Daftar Jasa
+          </Button>
+        </Link>
+      </motion.div>
 
         <form onSubmit={handleSubmit}>
           <Card className="shadow-md">

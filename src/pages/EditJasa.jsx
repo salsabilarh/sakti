@@ -9,12 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 function EditService() {
   const { id } = useParams();
@@ -124,10 +120,20 @@ function EditService() {
     setLoading(true);
 
     try {
+      // filter sub sektor yang masih valid
+      const validSubSectorIds = sectors
+        .filter((s) => form.sectors.includes(s.id.toString()))
+        .flatMap((s) => s.sub_sectors || [])
+        .map((sub) => sub.id.toString());
+
+      const filteredSubSectors = form.sub_sectors.filter((id) =>
+        validSubSectorIds.includes(id)
+      );
+
       const payload = {
         ...form,
         sectors: form.sectors || [],
-        sub_sectors: form.sub_sectors || [],
+        sub_sectors: filteredSubSectors,
       };
 
       const res = await fetch(`https://api-sakti-production.up.railway.app/api/services/${id}`, {
@@ -168,7 +174,16 @@ function EditService() {
       <Helmet><title>Edit Layanan - SAKTI</title></Helmet>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Edit Layanan</h1>
+      <h1 className="text-2xl font-bold mb-4">Edit Layanan</h1>
+
+      <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+        <Link to="/daftar-jasa">
+          <Button variant="outline" className="mb-6">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Kembali ke Daftar Jasa
+          </Button>
+        </Link>
+      </motion.div>
 
         <form onSubmit={handleSubmit}>
           <Card className="shadow-md">
@@ -290,7 +305,6 @@ function EditService() {
                           setForm((prev) => ({
                             ...prev,
                             sectors: updated,
-                            sub_sectors: [], // reset sub sektor saat sektor berubah
                           }));
                         }}
                       />
