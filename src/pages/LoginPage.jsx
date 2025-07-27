@@ -16,6 +16,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [botpressLoaded, setBotpressLoaded] = useState(false);
   const [initializationAttempt, setInitializationAttempt] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   
   // Refs untuk mencegah multiple initialization
   const desktopInitialized = useRef(false);
@@ -29,6 +30,17 @@ function LoginPage() {
 
   const from = location.state?.from?.pathname || "/dashboard";
 
+  // Detect mobile/desktop
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
       navigate(from, { replace: true });
@@ -40,6 +52,7 @@ function LoginPage() {
     return new Promise((resolve, reject) => {
       // Jika script sudah dimuat sebelumnya
       if (scriptLoaded.current && window.botpress) {
+        console.log('Botpress script already loaded');
         resolve();
         return;
       }
@@ -48,6 +61,7 @@ function LoginPage() {
       const existingScript = document.getElementById('botpress-webchat-script');
       if (existingScript) {
         existingScript.remove();
+        console.log('Removed existing Botpress script');
       }
 
       const script = document.createElement('script');
@@ -56,16 +70,18 @@ function LoginPage() {
       script.id = 'botpress-webchat-script';
       
       script.onload = () => {
-        console.log('Botpress script loaded');
+        console.log('Botpress script loaded successfully');
         
         // Tunggu sampai window.botpress tersedia
         const waitForBotpress = (attempts = 0) => {
           if (window.botpress && typeof window.botpress.init === 'function') {
             scriptLoaded.current = true;
+            console.log('Botpress object is now available');
             resolve();
-          } else if (attempts < 50) { // Increased attempts
+          } else if (attempts < 60) { // Increased attempts for mobile
             setTimeout(() => waitForBotpress(attempts + 1), 100);
           } else {
+            console.error('Botpress object not available after script load');
             reject(new Error('Botpress object not available after script load'));
           }
         };
@@ -85,16 +101,16 @@ function LoginPage() {
   // Function untuk inisialisasi Botpress pada selector tertentu
   const initializeBotpress = useCallback(async (selector, isDesktop = true) => {
     try {
-      console.log(`Attempting to initialize Botpress for ${selector}`);
+      console.log(`Attempting to initialize Botpress for ${selector}, isDesktop: ${isDesktop}`);
       
       // Check if already initialized
       if (isDesktop && desktopInitialized.current) {
         console.log('Desktop Botpress already initialized');
-        return;
+        return true;
       }
       if (!isDesktop && mobileInitialized.current) {
         console.log('Mobile Botpress already initialized');
-        return;
+        return true;
       }
 
       if (!window.botpress || typeof window.botpress.init !== 'function') {
@@ -110,6 +126,7 @@ function LoginPage() {
 
       // Clear existing content
       element.innerHTML = '';
+      console.log(`Cleared content for ${selector}`);
 
       // Configure Botpress
       const botpressConfig = {
@@ -136,6 +153,7 @@ function LoginPage() {
       };
 
       // Initialize Botpress
+      console.log(`Initializing Botpress with config:`, botpressConfig);
       await window.botpress.init(botpressConfig);
       
       // Mark as initialized
@@ -155,8 +173,18 @@ function LoginPage() {
           setTimeout(() => {
             if (window.botpress && typeof window.botpress.open === 'function') {
               window.botpress.open();
+              console.log(`Opened webchat for ${selector}`);
             }
           }, 1500);
+        });
+
+        // Additional event listeners for debugging
+        window.botpress.on('webchat:opened', () => {
+          console.log(`Webchat opened for ${selector}`);
+        });
+
+        window.botpress.on('webchat:closed', () => {
+          console.log(`Webchat closed for ${selector}`);
         });
       }
 
@@ -177,20 +205,37 @@ function LoginPage() {
       setBotpressLoaded(true);
       
       // Wait a bit for DOM to be stable
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Try to initialize both chats
-      const desktopSuccess = await initializeBotpress('#webchat', true);
-      const mobileSuccess = await initializeBotpress('#webchat-mobile', false);
+      // Initialize based on current view
+      let success = false;
       
-      if (desktopSuccess || mobileSuccess) {
-        console.log('At least one Botpress instance initialized successfully');
+      if (isMobile) {
+        console.log('Initializing for mobile...');
+        success = await initializeBotpress('#webchat-mobile', false);
+      } else {
+        console.log('Initializing for desktop...');
+        success = await initializeBotpress('#webchat', true);
+      }
+      
+      // Try both if the current one fails
+      if (!success) {
+        console.log('Primary initialization failed, trying both...');
+        const desktopSuccess = await initializeBotpress('#webchat', true);
+        const mobileSuccess = await initializeBotpress('#webchat-mobile', false);
+        success = desktopSuccess || mobileSuccess;
+      }
+      
+      if (success) {
+        console.log('Botpress initialization completed successfully');
       } else {
         console.warn('Failed to initialize any Botpress instance');
         // Retry after a delay
-        setTimeout(() => {
-          setInitializationAttempt(prev => prev + 1);
-        }, 2000);
+        if (initializationAttempt < 3) {
+          setTimeout(() => {
+            setInitializationAttempt(prev => prev + 1);
+          }, 2000);
+        }
       }
       
     } catch (error) {
@@ -205,7 +250,7 @@ function LoginPage() {
         }, 3000);
       }
     }
-  }, [loadBotpressScript, initializeBotpress, initializationAttempt]);
+  }, [loadBotpressScript, initializeBotpress, initializationAttempt, isMobile]);
 
   // Initialize on component mount and retry attempts
   useEffect(() => {
@@ -215,6 +260,20 @@ function LoginPage() {
 
     return () => clearTimeout(timer);
   }, [initializeBotpressChats, initializationAttempt]);
+
+  // Reinitialize when mobile/desktop view changes
+  useEffect(() => {
+    if (botpressLoaded && scriptLoaded.current) {
+      console.log('View changed, reinitializing Botpress...');
+      // Reset initialization flags when view changes
+      desktopInitialized.current = false;
+      mobileInitialized.current = false;
+      
+      setTimeout(() => {
+        initializeBotpressChats();
+      }, 500);
+    }
+  }, [isMobile, botpressLoaded, initializeBotpressChats]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -260,30 +319,113 @@ function LoginPage() {
       <Helmet>
         <title>Login - SAKTI Platform</title>
         <meta name="description" content="Login to SAKTI - Service Knowledge Platform with integrated chatbot assistance." />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <style>{`
+          /* Mobile-first responsive styles */
+          @media (max-width: 1023px) {
+            .mobile-layout {
+              display: flex !important;
+              flex-direction: column;
+              min-height: 100vh;
+            }
+            
+            .mobile-login-section {
+              flex: 0 0 auto;
+              padding: 1rem;
+              background: white;
+              min-height: 50vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            
+            .mobile-chat-section {
+              flex: 1;
+              background: #f9fafb;
+              padding: 1rem;
+              display: flex;
+              flex-direction: column;
+              min-height: 50vh;
+            }
+            
+            .mobile-chatbox {
+              height: clamp(350px, 60vh, 500px) !important;
+              min-height: 350px !important;
+            }
+          }
+
+          @media (max-height: 600px) and (max-width: 1023px) {
+            .mobile-chatbox {
+              height: clamp(300px, 50vh, 400px) !important;
+            }
+          }
+          
+          /* Botpress mobile responsive styles */
+          #webchat .bpWebchat,
+          #webchat-mobile .bpWebchat {
+            position: unset !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: 100% !important;
+            max-width: 100% !important;
+            border-radius: 0.75rem !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+          }
+
+          #webchat .bpFab,
+          #webchat-mobile .bpFab {
+            display: none !important;
+          }
+          
+          /* Force mobile widget to be visible */
+          @media (max-width: 1023px) {
+            #webchat-mobile {
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            
+            #webchat {
+              display: none !important;
+            }
+          }
+          
+          @media (min-width: 1024px) {
+            #webchat {
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            
+            #webchat-mobile {
+              display: none !important;
+            }
+          }
+        `}</style>
       </Helmet>
 
-      <div className="min-h-screen w-full grid lg:grid-cols-2">
-        {/* Left Column - Login Form */}
-        <div className="flex flex-col items-center justify-center p-8 bg-white">
+      <div className={`min-h-screen w-full ${isMobile ? 'mobile-layout' : 'grid lg:grid-cols-2'}`}>
+        {/* Login Form Section */}
+        <div className={`${isMobile ? 'mobile-login-section' : 'flex flex-col items-center justify-center p-8 bg-white'}`}>
           <motion.div 
             initial={{ opacity: 0, y: -20 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.6 }} 
             className="w-full max-w-md"
           >
-            <div className="mb-8 self-start">
+            <div className="mb-6 lg:mb-8 self-start">
               <img 
                 src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png" 
                 alt="SAKTI Logo" 
-                className="h-12 mb-6" 
+                className="h-10 lg:h-12 mb-4 lg:mb-6" 
               />
-              <h2 className="text-3xl font-bold text-gray-900">Selamat Datang</h2>
-              <p className="text-gray-600 mt-2">Masuk untuk melanjutkan ke SAKTI Platform.</p>
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">Selamat Datang</h2>
+              <p className="text-gray-600 mt-2 text-sm lg:text-base">Masuk untuk melanjutkan ke SAKTI Platform.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm">Email</Label>
                 <Input 
                   id="email" 
                   type="email" 
@@ -291,13 +433,13 @@ function LoginPage() {
                   value={email} 
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
-                  className="h-11" 
+                  className="h-10 lg:h-11 text-sm" 
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link to="/forgot-password" className="text-sm text-[#000476] hover:underline">
+                  <Label htmlFor="password" className="text-sm">Password</Label>
+                  <Link to="/forgot-password" className="text-xs text-[#000476] hover:underline">
                     Lupa Password?
                   </Link>
                 </div>
@@ -309,19 +451,19 @@ function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="h-11 pr-10"
+                    className="h-10 lg:h-11 pr-10 text-sm"
                   />
                   <div
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700"
                   >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </div>
                 </div>
               </div>
               <Button 
                 type="submit" 
-                className="w-full h-11 text-white font-medium hover:opacity-90 transition-opacity" 
+                className="w-full h-10 lg:h-11 text-white font-medium hover:opacity-90 transition-opacity text-sm" 
                 style={{ backgroundColor: '#000476' }} 
                 disabled={loading}
               >
@@ -329,11 +471,11 @@ function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-4 lg:mt-6 text-center">
               <Link to="/register">
                 <Button 
                   variant="outline" 
-                  className="w-full h-11 border-[#000476] text-[#000476] hover:bg-blue-50 transition-colors"
+                  className="w-full h-10 lg:h-11 border-[#000476] text-[#000476] hover:bg-blue-50 transition-colors text-sm"
                 >
                   Register
                 </Button>
@@ -342,27 +484,33 @@ function LoginPage() {
           </motion.div>
         </div>
 
-        {/* Right Column - Desktop Chatbot */}
-        <motion.div 
-          initial={{ opacity: 0, x: 50 }} 
-          animate={{ opacity: 1, x: 0 }} 
-          transition={{ duration: 0.6, delay: 0.2 }} 
-          className="hidden lg:flex flex-col items-center justify-center p-8 bg-gray-50 h-screen"
-        >
-          <div className="chatbot-container w-full max-w-[550px] flex flex-col items-center text-center">
-            <h2 className="text-2xl font-bold text-[#000476] mb-2">
-              SAKTI Assistant
+        {/* Chatbot Section */}
+        <div className={`${isMobile ? 'mobile-chat-section' : 'hidden lg:flex flex-col items-center justify-center p-8 bg-gray-50 h-screen'}`}>
+          <motion.div 
+            initial={{ opacity: 0, x: isMobile ? 0 : 50 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            transition={{ duration: 0.6, delay: isMobile ? 0 : 0.2 }} 
+            className="chatbot-container w-full max-w-[550px] flex flex-col items-center text-center"
+          >
+            <h2 className="text-xl lg:text-2xl font-bold text-[#000476] mb-2">
+              {isMobile ? '🤖 ' : ''}SAKTI Assistant
             </h2>
-            <p className="text-sm text-gray-600 max-w-lg leading-relaxed mb-8">
+            <p className="text-xs lg:text-sm text-gray-600 max-w-lg leading-relaxed mb-4 lg:mb-8 px-2">
               Looking for the right service? <strong>SAKTI Assistant</strong> helps you explore whether
               <strong> PT SUCOFINDO</strong> can deliver what your business needs. Just ask your question — our chatbot will guide you to the right solution.
             </p>
-            <div className="chatbot-box w-full bg-white rounded-lg shadow-md overflow-hidden" style={{ height: '500px' }}>
+            
+            {/* Desktop Chatbot */}
+            <div 
+              className={`chatbot-box w-full bg-white rounded-lg shadow-md overflow-hidden ${isMobile ? 'mobile-chatbox' : ''}`}
+              style={{ height: isMobile ? 'auto' : '500px' }}
+            >
               <div 
                 id="webchat" 
                 className="w-full h-full relative"
+                style={{ display: isMobile ? 'none' : 'block' }}
               >
-                {!botpressLoaded && (
+                {!botpressLoaded && !isMobile && (
                   <div className="flex items-center justify-center h-full text-gray-500">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#000476] mx-auto mb-4"></div>
@@ -376,26 +524,17 @@ function LoginPage() {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Mobile Chatbot */}
-        <div className="block lg:hidden bg-gray-50 p-8">
-          <div className="chatbot-container w-full flex flex-col items-center text-center">
-            <h2 className="text-2xl font-bold text-[#000476] mb-2">
-              🤖 SAKTI Assistant
-            </h2>
-            <p className="text-sm text-gray-600 max-w-lg leading-relaxed mb-8">
-              Looking for the right service? <strong>SAKTI Assistant</strong> helps you explore whether
-              <strong> PT SUCOFINDO</strong> can deliver what your business needs. Just ask your question — our chatbot will guide you to the right solution.
-            </p>
-            <div className="chatbot-box w-full bg-white rounded-lg shadow-md overflow-hidden" style={{ height: '400px' }}>
+              
+              {/* Mobile Chatbot */}
               <div 
                 id="webchat-mobile" 
                 className="w-full h-full relative"
+                style={{ 
+                  display: isMobile ? 'block' : 'none',
+                  height: isMobile ? 'clamp(350px, 60vh, 500px)' : 'auto'
+                }}
               >
-                {!botpressLoaded && (
+                {!botpressLoaded && isMobile && (
                   <div className="flex items-center justify-center h-full text-gray-500">
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#000476] mx-auto mb-4"></div>
@@ -410,7 +549,7 @@ function LoginPage() {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </>
