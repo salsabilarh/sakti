@@ -27,23 +27,6 @@ function EditService() {
   const [portfolios, setPortfolios] = useState([]);
   const [sectors, setSectors] = useState([]);
   const [subSectors, setSubSectors] = useState([]);
-  const [showPortfolioModal, setShowPortfolioModal] = useState(false);
-  const [newPortfolioName, setNewPortfolioName] = useState('');
-
-  const [showSubPortfolioModal, setShowSubPortfolioModal] = useState(false);
-  const [selectedPortfolioForSub, setSelectedPortfolioForSub] = useState('');
-  const [newSubPortfolioName, setNewSubPortfolioName] = useState('');
-  const [newSubPortfolioCode, setNewSubPortfolioCode] = useState('');
-
-  const [showSectorModal, setShowSectorModal] = useState(false);
-  const [newSectorName, setNewSectorName] = useState('');
-  const [newSectorCode, setNewSectorCode] = useState('');
-
-  const [showSubSectorModal, setShowSubSectorModal] = useState(false);
-  const [selectedSectorForSub, setSelectedSectorForSub] = useState('');
-  const [newSubSectorName, setNewSubSectorName] = useState('');
-  const [newSubSectorCode, setNewSubSectorCode] = useState('');
-
 
   const [form, setForm] = useState({
     name: '',
@@ -57,7 +40,7 @@ function EditService() {
     sbu_owner_id: '',
     portfolio_id: '',
     sub_portfolio_id: '',
-    sector_id: '',
+    sectors: [],
     sub_sectors: [],
   });
 
@@ -97,7 +80,7 @@ function EditService() {
           sbu_owner_id: s.sbu_owner?.id || '',
           portfolio_id: s.portfolio?.id || '',
           sub_portfolio_id: s.sub_portfolio?.id || '',
-          sector_id: s.sectors?.[0]?.id?.toString() || '',
+          sectors: s.sectors?.map(sec => sec.id.toString()) || [], // ← ini diubah
           sub_sectors: s.sub_sectors?.map(ss => ss.id.toString()) || [],
         });
 
@@ -120,9 +103,11 @@ function EditService() {
   }, [authToken, id, toast]);
 
   useEffect(() => {
-    const selected = sectors.find((s) => s.id.toString() === form.sector_id);
-    setSubSectors(selected?.sub_sectors || []);
-  }, [form.sector_id, sectors]);
+    const selectedSubs = sectors
+      .filter((s) => form.sectors.includes(s.id.toString()))
+      .flatMap((s) => s.sub_sectors || []);
+    setSubSectors(selectedSubs);
+  }, [form.sectors, sectors]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -141,8 +126,8 @@ function EditService() {
     try {
       const payload = {
         ...form,
-        sectors: form.sector_id ? [form.sector_id] : [],
-        sub_sectors: form.sub_sectors,
+        sectors: form.sectors || [],
+        sub_sectors: form.sub_sectors || [],
       };
 
       const res = await fetch(`https://api-sakti-production.up.railway.app/api/services/${id}`, {
@@ -254,26 +239,26 @@ function EditService() {
               </div>
 
               <div>
-                <label className="font-medium block">Sub Portfolio</label>
-                <select
-                  name="sub_portfolio_id"
-                  value={form.sub_portfolio_id}
-                  onChange={(e) => {
-                    if (e.target.value === '__new__') {
-                      setShowSubPortfolioModal(true);
-                      return;
-                    }
-                    handleChange(e);
-                  }}
-                  className="border rounded px-3 py-2 w-full"
-                >
-                  <option value="">-- Pilih Sub Portfolio --</option>
-                  {portfolios.flatMap(p => p.sub_portfolios || []).map(sub => (
-                    <option key={sub.id} value={sub.id}>{sub.name}</option>
-                  ))}
-                  <option value="__new__">+ Tambah Sub Portfolio Baru</option>
-                </select>
-              </div>
+              <label className="font-medium block">Sub Portfolio</label>
+              <select
+                name="sub_portfolio_id"
+                value={form.sub_portfolio_id}
+                onChange={(e) => {
+                  if (e.target.value === '__new__') {
+                    setShowSubPortfolioModal(true);
+                    return;
+                  }
+                  handleChange(e);
+                }}
+                className="border rounded px-3 py-2 w-full"
+              >
+                <option value="">-- Pilih Sub Portfolio --</option>
+                {portfolios.flatMap(p => p.sub_portfolios || []).map(sub => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
+                <option value="__new__">+ Tambah Sub Portfolio Baru</option>
+              </select>
+            </div>
 
               <div>
                 <label className="font-medium block">Unit Pemilik (SBU Owner)</label>
@@ -294,13 +279,18 @@ function EditService() {
                       <input
                         type="checkbox"
                         value={s.id.toString()}
-                        checked={form.sector_id === s.id.toString()}
+                        checked={form.sectors.includes(s.id.toString())}
                         onChange={(e) => {
                           const value = e.target.value;
+                          const checked = e.target.checked;
+                          const updated = checked
+                            ? [...form.sectors, value]
+                            : form.sectors.filter((id) => id !== value);
+
                           setForm((prev) => ({
                             ...prev,
-                            sector_id: value,
-                            sub_sectors: [],
+                            sectors: updated,
+                            sub_sectors: [], // reset sub sektor saat sektor berubah
                           }));
                         }}
                       />
