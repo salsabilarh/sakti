@@ -9,6 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 function EditService() {
   const { id } = useParams();
@@ -21,6 +27,23 @@ function EditService() {
   const [portfolios, setPortfolios] = useState([]);
   const [sectors, setSectors] = useState([]);
   const [subSectors, setSubSectors] = useState([]);
+  const [showPortfolioModal, setShowPortfolioModal] = useState(false);
+  const [newPortfolioName, setNewPortfolioName] = useState('');
+
+  const [showSubPortfolioModal, setShowSubPortfolioModal] = useState(false);
+  const [selectedPortfolioForSub, setSelectedPortfolioForSub] = useState('');
+  const [newSubPortfolioName, setNewSubPortfolioName] = useState('');
+  const [newSubPortfolioCode, setNewSubPortfolioCode] = useState('');
+
+  const [showSectorModal, setShowSectorModal] = useState(false);
+  const [newSectorName, setNewSectorName] = useState('');
+  const [newSectorCode, setNewSectorCode] = useState('');
+
+  const [showSubSectorModal, setShowSubSectorModal] = useState(false);
+  const [selectedSectorForSub, setSelectedSectorForSub] = useState('');
+  const [newSubSectorName, setNewSubSectorName] = useState('');
+  const [newSubSectorCode, setNewSubSectorCode] = useState('');
+
 
   const [form, setForm] = useState({
     name: '',
@@ -180,14 +203,6 @@ function EditService() {
               <div>
                 <label className="font-medium block">Link Video Intro</label>
                 <Input name="intro_video_url" value={form.intro_video_url} onChange={handleChange} />
-                {form.intro_video_url && (
-                  <iframe
-                    src={form.intro_video_url}
-                    title="Video Preview"
-                    className="w-full h-52 border mt-2"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
-                )}
               </div>
 
               <div>
@@ -217,11 +232,24 @@ function EditService() {
 
               <div>
                 <label className="font-medium block">Portfolio</label>
-                <select name="portfolio_id" value={form.portfolio_id} onChange={handleChange} className="border rounded px-3 py-2 w-full" required>
+                <select
+                  name="portfolio_id"
+                  value={form.portfolio_id}
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') {
+                      setShowPortfolioModal(true);
+                      setForm((prev) => ({ ...prev, portfolio_id: '' }));
+                      return;
+                    }
+                    handleChange(e);
+                  }}
+                  className="border rounded px-3 py-2 w-full"
+                >
                   <option value="">-- Pilih Portfolio --</option>
                   {portfolios.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
+                  <option value="__new__">+ Tambah Portfolio Baru</option>
                 </select>
               </div>
 
@@ -230,13 +258,20 @@ function EditService() {
                 <select
                   name="sub_portfolio_id"
                   value={form.sub_portfolio_id}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') {
+                      setShowSubPortfolioModal(true);
+                      return;
+                    }
+                    handleChange(e);
+                  }}
                   className="border rounded px-3 py-2 w-full"
                 >
                   <option value="">-- Pilih Sub Portfolio --</option>
                   {portfolios.flatMap(p => p.sub_portfolios || []).map(sub => (
                     <option key={sub.id} value={sub.id}>{sub.name}</option>
                   ))}
+                  <option value="__new__">+ Tambah Sub Portfolio Baru</option>
                 </select>
               </div>
 
@@ -250,23 +285,65 @@ function EditService() {
                 </select>
               </div>
 
+              {/* Sektor */}
               <div>
                 <label className="font-medium block">Sektor</label>
-                <select name="sector_id" value={form.sector_id} onChange={handleChange} className="border rounded px-3 py-2 w-full">
-                  <option value="">-- Pilih Sektor --</option>
-                  {sectors.map(s => (
-                    <option key={s.id} value={s.id}>{s.code} - {s.name}</option>
+                <div className="space-y-1 border rounded p-3">
+                  {sectors.map((s) => (
+                    <label key={s.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        value={s.id.toString()}
+                        checked={form.sector_id === s.id.toString()}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setForm((prev) => ({
+                            ...prev,
+                            sector_id: value,
+                            sub_sectors: [],
+                          }));
+                        }}
+                      />
+                      <span>{s.code} - {s.name}</span>
+                    </label>
                   ))}
-                </select>
+                  <Button type="button" onClick={() => setShowSectorModal(true)} size="sm">
+                    + Tambah Sektor Baru
+                  </Button>
+                </div>
               </div>
 
+              {/* Sub Sektor */}
               <div>
                 <label className="font-medium block">Sub Sektor</label>
-                <select multiple name="sub_sectors" value={form.sub_sectors} onChange={handleMultiSelect} className="border rounded px-3 py-2 w-full h-32">
-                  {subSectors.map(sub => (
-                    <option key={sub.id} value={sub.id}>{sub.code} - {sub.name}</option>
+                <div className="space-y-1 border rounded p-3">
+                  {subSectors.map((sub) => (
+                    <label key={sub.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        value={sub.id.toString()}
+                        checked={form.sub_sectors.includes(sub.id.toString())}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const value = e.target.value;
+
+                          const updated = checked
+                            ? [...form.sub_sectors, value]
+                            : form.sub_sectors.filter((id) => id !== value);
+
+                          setForm((prev) => ({
+                            ...prev,
+                            sub_sectors: updated,
+                          }));
+                        }}
+                      />
+                      <span>{sub.code} - {sub.name}</span>
+                    </label>
                   ))}
-                </select>
+                  <Button type="button" onClick={() => setShowSubSectorModal(true)} size="sm">
+                    + Tambah Sub Sektor Baru
+                  </Button>
+                </div>
               </div>
 
               <Button type="submit" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
