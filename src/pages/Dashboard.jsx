@@ -14,7 +14,7 @@ function Dashboard() {
     const injectBotpressScript = () => {
       return new Promise((resolve, reject) => {
         if (document.getElementById('botpress-webchat-script')) {
-          return resolve(); // Script sudah ada
+          return resolve();
         }
 
         const script = document.createElement('script');
@@ -31,69 +31,53 @@ function Dashboard() {
       try {
         await injectBotpressScript();
 
-        const container = document.querySelector('#webchat');
+        const initWebchat = () => {
+          if (window.botpress && document.querySelector('#webchat')) {
+            window.botpress.on('webchat:ready', () => {
+              window.botpress.open();
+            });
 
-        // Hapus iframe lama jika ada (prevent double rendering)
-        const oldIframe = container?.querySelector('iframe');
-        if (oldIframe) container.innerHTML = '';
+            window.botpress.init({
+              botId: 'ca0e2a53-b7b1-4b4d-90e2-7b93d67b28e0',
+              clientId: '48967a19-c892-47f0-8f46-e7cfd3153a98',
+              selector: '#webchat',
+              configuration: {
+                version: 'v1',
+                composerPlaceholder: '',
+                botName: 'SAKTI Assistant',
+                botAvatar: 'https://files.bpcontent.cloud/2025/07/27/09/20250727092708-YXL6QMAF.png',
+                botDescription: '',
+                color: '#3276EA',
+                variant: 'solid',
+                headerVariant: 'glass',
+                themeMode: 'light',
+                fontFamily: 'inter',
+                radius: 4,
+                feedbackEnabled: false,
+                footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
+                email: {
+                  title: 'm.alfarisi@sucofindo.co.id',
+                  link: 'm.alfarisi@sucofindo.co.id'
+                }
+              }
+            });
+          }
+        };
 
-        // Jika botpress sudah dimuat
-        if (window.botpress && container) {
-          window.botpress.init({
-            botId: 'ca0e2a53-b7b1-4b4d-90e2-7b93d67b28e0',
-            clientId: '48967a19-c892-47f0-8f46-e7cfd3153a98',
-            selector: '#webchat',
-            configuration: {
-              version: 'v1',
-              composerPlaceholder: '',
-              botName: 'SAKTI Assistant',
-              botAvatar: 'https://files.bpcontent.cloud/2025/07/27/09/20250727092708-YXL6QMAF.png',
-              color: '#3276EA',
-              variant: 'solid',
-              headerVariant: 'glass',
-              themeMode: 'light',
-              fontFamily: 'inter',
-              radius: 4,
-              feedbackEnabled: false,
-              footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
-              email: {
-                title: 'm.alfarisi@sucofindo.co.id',
-                link: 'm.alfarisi@sucofindo.co.id',
-              },
-            },
-          });
+        const interval = setInterval(() => {
+          if (document.querySelector('#webchat') && window.botpress) {
+            initWebchat();
+            clearInterval(interval);
+          }
+        }, 100);
 
-          // Setelah inisialisasi, buka otomatis
-          window.botpress.on('webchat:ready', () => {
-            window.botpress.open();
-          });
-        }
+        setTimeout(() => clearInterval(interval), 5000);
       } catch (error) {
-        console.error('Botpress failed to initialize:', error);
+        console.error('Botpress initialization failed:', error);
       }
     };
 
-    // Trigger ulang setiap kali ke halaman /dashboard
-    if (location.pathname === '/dashboard') {
-      initializeBotpress();
-    }
-
-    return () => {
-      // Optional: hapus konten webchat saat keluar dari dashboard
-      if (location.pathname !== '/dashboard') {
-        const el = document.querySelector('#webchat');
-        if (el) el.innerHTML = '';
-      }
-    };
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const isDashboard = location.pathname === '/dashboard';
-    const el = document.querySelector('#webchat');
-
-    if (!isDashboard && el) {
-      el.innerHTML = ''; // hapus iframe saat keluar dari dashboard
-    }
+    initializeBotpress();
   }, [location.pathname]);
 
   useEffect(() => {
