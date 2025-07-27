@@ -7,10 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Search, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList
+} from '@/components/ui/command';
 
 function EditService() {
   const { id } = useParams();
@@ -39,6 +44,9 @@ function EditService() {
     sectors: [],
     sub_sectors: [],
   });
+
+  const [openSector, setOpenSector] = useState(false);
+  const [openSubSector, setOpenSubSector] = useState(false);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -110,19 +118,12 @@ function EditService() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleMultiSelect = (e) => {
-    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
-    setForm((prev) => ({ ...prev, sub_sectors: selected }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // filter sub sektor yang masih valid
       const validSubSectorIds = sectors
-        .filter((s) => form.sectors.includes(s.id.toString()))
         .flatMap((s) => s.sub_sectors || [])
         .map((sub) => sub.id.toString());
 
@@ -130,9 +131,15 @@ function EditService() {
         validSubSectorIds.includes(id)
       );
 
+      const filteredSectors = sectors
+        .filter((s) =>
+          s.sub_sectors?.some((sub) => filteredSubSectors.includes(sub.id.toString()))
+        )
+        .map((s) => s.id.toString());
+
       const payload = {
         ...form,
-        sectors: form.sectors || [],
+        sectors: filteredSectors,
         sub_sectors: filteredSubSectors,
       };
 
@@ -150,11 +157,7 @@ function EditService() {
         throw new Error(errData.error || 'Gagal update layanan');
       }
 
-      toast({
-        title: 'Berhasil',
-        description: 'Layanan berhasil diperbarui.',
-      });
-
+      toast({ title: 'Berhasil', description: 'Layanan berhasil diperbarui.' });
       navigate(`/service/${id}`);
     } catch (err) {
       toast({
@@ -253,27 +256,34 @@ function EditService() {
                 </select>
               </div>
 
-              <div>
-              <label className="font-medium block">Sub Portfolio</label>
-              <select
-                name="sub_portfolio_id"
-                value={form.sub_portfolio_id}
-                onChange={(e) => {
-                  if (e.target.value === '__new__') {
-                    setShowSubPortfolioModal(true);
-                    return;
-                  }
-                  handleChange(e);
-                }}
-                className="border rounded px-3 py-2 w-full"
-              >
-                <option value="">-- Pilih Sub Portfolio --</option>
-                {portfolios.flatMap(p => p.sub_portfolios || []).map(sub => (
-                  <option key={sub.id} value={sub.id}>{sub.name}</option>
-                ))}
-                <option value="__new__">+ Tambah Sub Portfolio Baru</option>
-              </select>
-            </div>
+              {form.portfolio_id && (
+                <div>
+                  <label className="text-sm font-medium">Sub Portfolio</label>
+                  <select
+                    name="sub_portfolio_id"
+                    value={form.sub_portfolio_id}
+                    onChange={(e) => {
+                      if (e.target.value === '__new__') {
+                        setShowSubPortfolioModal(true);
+                        return;
+                      }
+                      handleChange(e);
+                    }}
+                    className="border rounded px-3 py-2 w-full"
+                    required
+                  >
+                    <option value="">-- Pilih Sub Portfolio --</option>
+                    {portfolios
+                      .find((p) => p.id.toString() === form.portfolio_id.toString())
+                      ?.sub_portfolios?.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    <option value="__new__">+ Tambah Sub Portfolio Baru</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="font-medium block">Unit Pemilik (SBU Owner)</label>
@@ -285,72 +295,148 @@ function EditService() {
                 </select>
               </div>
 
-              {/* Sektor */}
+              {/* Multi-select sektor */}
               <div>
-                <label className="font-medium block">Sektor</label>
-                <div className="space-y-1 border rounded p-3">
-                  {sectors.map((s) => (
-                    <label key={s.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        value={s.id.toString()}
-                        checked={form.sectors.includes(s.id.toString())}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const checked = e.target.checked;
-                          const updated = checked
-                            ? [...form.sectors, value]
-                            : form.sectors.filter((id) => id !== value);
-
-                          setForm((prev) => ({
-                            ...prev,
-                            sectors: updated,
-                          }));
-                        }}
-                      />
-                      <span>{s.code} - {s.name}</span>
-                    </label>
-                  ))}
-                  <Button type="button" onClick={() => setShowSectorModal(true)} size="sm">
-                    + Tambah Sektor Baru
-                  </Button>
-                </div>
+                <label className="font-medium block mb-1">Sektor</label>
+                <Popover open={openSector} onOpenChange={setOpenSector}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full flex-wrap justify-start gap-2 text-left min-h-[2.5rem]">
+                      {form.sectors.length > 0 ? (
+                        form.sectors.map((id) => {
+                          const sector = sectors.find((s) => s.id.toString() === id);
+                          if (!sector) return null;
+                          return (
+                            <span key={sector.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 mr-1">
+                              {sector.code} - {sector.name}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    sectors: prev.sectors.filter((sId) => sId !== sector.id.toString()),
+                                    sub_sectors: prev.sub_sectors.filter((ssId) =>
+                                      !sector.sub_sectors?.some((ss) => ss.id.toString() === ssId)
+                                    ),
+                                  }));
+                                }}
+                                className="ml-1 text-red-600 hover:text-red-800 font-bold"
+                              >
+                                &times;
+                              </button>
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-muted-foreground">Pilih sektor...</span>
+                      )}
+                      <Search className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="min-w-full max-w-sm p-0">
+                    <Command>
+                      <CommandInput placeholder="Cari sektor..." />
+                      <CommandList>
+                        <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                          {sectors.map((sector) => {
+                            const isSelected = form.sectors.includes(sector.id.toString());
+                            return (
+                              <CommandItem
+                                key={sector.id}
+                                value={sector.name}
+                                onSelect={() => {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    sectors: isSelected
+                                      ? prev.sectors.filter((id) => id !== sector.id.toString())
+                                      : [...prev.sectors, sector.id.toString()],
+                                  }));
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                                {sector.code} - {sector.name}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              {/* Sub Sektor */}
+              {/* Multi-select sub sektor */}
               <div>
-                <label className="font-medium block">Sub Sektor</label>
-                <div className="space-y-1 border rounded p-3">
-                  {subSectors.map((sub) => (
-                    <label key={sub.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        value={sub.id.toString()}
-                        checked={form.sub_sectors.includes(sub.id.toString())}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          const value = e.target.value;
-
-                          const updated = checked
-                            ? [...form.sub_sectors, value]
-                            : form.sub_sectors.filter((id) => id !== value);
-
-                          setForm((prev) => ({
-                            ...prev,
-                            sub_sectors: updated,
-                          }));
-                        }}
-                      />
-                      <span>{sub.code} - {sub.name}</span>
-                    </label>
-                  ))}
-                  <Button type="button" onClick={() => setShowSubSectorModal(true)} size="sm">
-                    + Tambah Sub Sektor Baru
-                  </Button>
-                </div>
+                <label className="font-medium block mb-1">Sub Sektor</label>
+                <Popover open={openSubSector} onOpenChange={setOpenSubSector}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full flex-wrap justify-start gap-2 text-left min-h-[2.5rem]">
+                      {form.sub_sectors.length > 0 ? (
+                        form.sub_sectors.map((id) => {
+                          const sub = subSectors.find((s) => s.id.toString() === id);
+                          if (!sub) return null;
+                          return (
+                            <span key={sub.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-800 mr-1">
+                              {sub.code} - {sub.name}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    sub_sectors: prev.sub_sectors.filter((ssId) => ssId !== id),
+                                  }));
+                                }}
+                                className="ml-1 text-red-600 hover:text-red-800 font-bold"
+                              >
+                                &times;
+                              </button>
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-muted-foreground">Pilih sub sektor...</span>
+                      )}
+                      <Search className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="min-w-full max-w-sm p-0">
+                    <Command>
+                      <CommandInput placeholder="Cari sub sektor..." />
+                      <CommandList>
+                        <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                          {subSectors.map((sub) => {
+                            const isSelected = form.sub_sectors.includes(sub.id.toString());
+                            return (
+                              <CommandItem
+                                key={sub.id}
+                                value={sub.name}
+                                onSelect={() => {
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    sub_sectors: isSelected
+                                      ? prev.sub_sectors.filter((id) => id !== sub.id.toString())
+                                      : [...prev.sub_sectors, sub.id.toString()],
+                                  }));
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                                {sub.code} - {sub.name}
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              <Button type="submit" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </Button>
             </CardContent>
           </Card>
         </form>

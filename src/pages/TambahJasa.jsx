@@ -16,6 +16,10 @@ import {
 } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { Check, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 function TambahJasa() {
   const { authToken, user } = useAuth();
@@ -58,6 +62,9 @@ function TambahJasa() {
   const [selectedSectorForSub, setSelectedSectorForSub] = useState('');
   const [newSubSectorName, setNewSubSectorName] = useState('');
   const [newSubSectorCode, setNewSubSectorCode] = useState('');
+
+  const [openSektor, setOpenSektor] = useState(false);
+  const [openSubSektor, setOpenSubSektor] = useState(false);
 
   const canCreateMasterData = user.role === 'admin' || user.role === 'ppk_manager';
 
@@ -124,11 +131,17 @@ function TambahJasa() {
   }, [authToken, toast]);
 
   useEffect(() => {
-    // Ambil semua sub sektor dari sektor-sektor terpilih
     const selectedSubs = sectors
       .filter((s) => form.sectors.includes(s.id.toString()))
       .flatMap((s) => s.sub_sectors || []);
     setSubSectors(selectedSubs);
+
+    // Optional: bersihkan sub_sectors yang tidak valid
+    const validSubIds = selectedSubs.map((s) => s.id.toString());
+    setForm((prev) => ({
+      ...prev,
+      sub_sectors: prev.sub_sectors.filter((id) => validSubIds.includes(id)),
+    }));
   }, [form.sectors, sectors]);
 
   useEffect(() => {
@@ -168,8 +181,7 @@ function TambahJasa() {
     }
     setForm((prev) => ({
       ...prev,
-      sectors: selected,
-      sub_sectors: [], // Reset sub sektor saat sektor berubah
+      sectors: selected
     }));
   };
 
@@ -188,9 +200,18 @@ function TambahJasa() {
     }
 
     try {
+      // Filter sektor yang memiliki sub sektor terpilih
+      const validSectors = sectors
+        .filter((s) => {
+          const subIds = s.sub_sectors?.map(sub => sub.id.toString()) || [];
+          const selectedSub = form.sub_sectors.filter(sub => subIds.includes(sub));
+          return selectedSub.length > 0;
+        })
+        .map((s) => s.id.toString());
+
       const payload = {
         ...form,
-        sectors: form.sectors || [],
+        sectors: validSectors,
         sub_sectors: form.sub_sectors || [],
       };
 
@@ -451,6 +472,7 @@ function TambahJasa() {
                 </select>
               </div>
 
+              {form.portfolio_id && (
               <div>
                 <label className="text-sm font-medium">Sub Portfolio</label>
                 <select
@@ -467,14 +489,17 @@ function TambahJasa() {
                   required
                 >
                   <option value="">-- Pilih Sub Portfolio --</option>
-                  {portfolios.flatMap(p => p.sub_portfolios || []).map(sub => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
+                  {portfolios
+                    .find((p) => p.id.toString() === form.portfolio_id.toString())
+                    ?.sub_portfolios?.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
                   <option value="__new__">+ Tambah Sub Portfolio Baru</option>
                 </select>
               </div>
+            )}
 
               <div>
                 <label className="font-medium block">Unit Pemilik</label>
@@ -494,41 +519,91 @@ function TambahJasa() {
                 </select>
               </div>
 
+              {/* Multi-select sektor */}
               <div>
-                <label className="font-medium block">Sektor</label>
-                <div className="space-y-1 border rounded p-3">
-                  {sectors.map((s) => (
-                    <label key={s.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        value={s.id.toString()}
-                        checked={form.sectors.includes(s.id.toString())}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          const value = e.target.value;
-
-                          const updated = checked
-                            ? [...form.sectors, value]
-                            : form.sectors.filter((id) => id !== value);
-
-                          setForm((prev) => ({
-                            ...prev,
-                            sectors: updated,
-                            sub_sectors: [], // reset sub sektor jika sektor berubah
-                          }));
-                        }}
-                      />
-                      <span>{s.code} - {s.name}</span>
-                    </label>
-                  ))}
-                  {canCreateMasterData && (
-                    <Button type="button" onClick={() => setShowSectorModal(true)} size="sm">
-                      + Tambah Sektor Baru
+                <label className="font-medium block mb-1">Sektor</label>
+                <Popover open={openSektor} onOpenChange={setOpenSektor}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full flex-wrap justify-start gap-2 text-left min-h-[2.5rem]"
+                    >
+                      {form.sectors.length > 0 ? (
+                        form.sectors.map((id) => {
+                          const sektor = sectors.find((s) => s.id.toString() === id.toString());
+                          if (!sektor) return null;
+                          return (
+                            <span
+                              key={sektor.id}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 mr-1"
+                            >
+                              {sektor.code} - {sektor.name}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    sectors: prev.sectors.filter((sid) => sid !== sektor.id.toString())
+                                  }));
+                                }}
+                                className="ml-1 text-red-600 hover:text-red-800 font-bold"
+                                title="Hapus"
+                              >
+                                &times;
+                              </button>
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-muted-foreground">Pilih sektor...</span>
+                      )}
+                      <Search className="ml-auto h-4 w-4 shrink-0 opacity-50" />
                     </Button>
-                  )}
-                </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="min-w-full max-w-sm p-0">
+                    <Command>
+                      <CommandInput placeholder="Cari sektor..." />
+                      <CommandList>
+                        <CommandEmpty>Sektor tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                          {sectors.map((s) => {
+                            const isSelected = form.sectors.includes(s.id.toString());
+                            return (
+                              <CommandItem
+                                key={s.id}
+                                onSelect={() => {
+                                  const newSelected = isSelected
+                                    ? form.sectors.filter((id) => id !== s.id.toString())
+                                    : [...form.sectors, s.id.toString()];
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    sectors: newSelected
+                                  }));
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{s.name}</span>
+                                  <span className="text-xs text-muted-foreground">{s.code}</span>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {canCreateMasterData && (
+                  <Button type="button" onClick={() => setShowSectorModal(true)} size="sm" className="mt-2">
+                    + Tambah Sektor Baru
+                  </Button>
+                )}
               </div>
 
+              {form.sectors.length > 0 && (
               <div>
                 <label className="font-medium block">Sub Sektor</label>
                 <div className="space-y-1 border rounded p-3">
@@ -562,6 +637,7 @@ function TambahJasa() {
                   )}
                 </div>
               </div>
+            )}
               <Button type="submit" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan Layanan'}</Button>
             </CardContent>
           </Card>
