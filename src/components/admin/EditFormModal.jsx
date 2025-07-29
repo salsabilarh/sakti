@@ -218,6 +218,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                   <SelectItem value="Pitch Deck">Pitch Deck</SelectItem>
                   <SelectItem value="Brochure">Brochure</SelectItem>
                   <SelectItem value="Technical Document">Technical Document</SelectItem>
+                  <SelectItem value="Others">Others</SelectItem>
                 </SelectContent>
               </Select>
             </div>
