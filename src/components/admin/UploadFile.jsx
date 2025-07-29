@@ -116,7 +116,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleFileUpload} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Multi-select Services */}
             <div>
               <Label htmlFor="services">Layanan Terkait</Label>
@@ -125,7 +125,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
                   <Button
                     variant="outline"
                     role="combobox"
-                    className="w-full flex-wrap justify-start gap-2 text-left min-h-[2.5rem]"
+                    className="w-full flex flex-wrap justify-start items-start min-h-[5rem] gap-2 overflow-y-auto max-h-40 text-left"
                   >
                     {serviceIds.length > 0 ? (
                       serviceIds.map((id) => {
@@ -134,7 +134,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
                         return (
                           <span
                             key={service.id}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 mr-1"
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800"
                           >
                             {service.code}
                             <button
@@ -165,7 +165,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
                       placeholder="Cari layanan..."
                       onValueChange={(value) => setSearchTerm(value.toLowerCase())}
                     />
-                    <CommandList>
+                    <CommandList className="max-h-64 overflow-y-auto">
                       <CommandEmpty>Layanan tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
                         {services
@@ -177,31 +177,31 @@ function UploadFile({ onUploadSuccess, onClose }) {
                             return nameMatch || codeMatch;
                           })
                           .map((service) => {
-                          const isSelected = serviceIds.includes(service.id.toString());
-                          return (
-                            <CommandItem
-                              key={service.id}
-                              value={`${service.id}-${service.name}-${service.code || ''}`}
-                              onSelect={() => {
-                                setServiceIds((prev) =>
-                                  isSelected
-                                    ? prev.filter((id) => id !== service.id.toString())
-                                    : [...prev, service.id.toString()]
-                                );
-                              }}
-                            >
-                              <Check
-                                className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
-                              />
-                              <div className="flex flex-col">
-                                <span className="font-medium">{service.name}</span>
-                                {service.code && (
-                                  <span className="text-xs text-gray-500">{service.code}</span>
-                                )}
-                              </div>
-                            </CommandItem>
-                          );
-                        })}
+                            const isSelected = serviceIds.includes(service.id.toString());
+                            return (
+                              <CommandItem
+                                key={service.id}
+                                value={`${service.id}-${service.name}-${service.code || ''}`}
+                                onSelect={() => {
+                                  setServiceIds((prev) =>
+                                    isSelected
+                                      ? prev.filter((id) => id !== service.id.toString())
+                                      : [...prev, service.id.toString()]
+                                  );
+                                }}
+                              >
+                                <Check
+                                  className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{service.name}</span>
+                                  {service.code && (
+                                    <span className="text-xs text-gray-500">{service.code}</span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
                       </CommandGroup>
                     </CommandList>
                   </Command>
