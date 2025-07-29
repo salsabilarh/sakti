@@ -39,7 +39,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await fetch('https://api-sakti-production.up.railway.app/api/services', {
+        const res = await fetch('https://api-sakti-production.up.railway.app/api/services?limit=9999', {
           headers: { Authorization: `Bearer ${authToken}` }
         });
         const data = await res.json();

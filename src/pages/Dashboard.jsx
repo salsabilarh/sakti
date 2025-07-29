@@ -64,14 +64,17 @@ function Dashboard() {
           }
         };
 
-        const interval = setInterval(() => {
-          if (document.querySelector('#webchat') && window.botpress) {
-            initWebchat();
-            clearInterval(interval);
-          }
-        }, 100);
+        const waitForWebchatAndInit = () => {
+        const webchatElement = document.querySelector('#webchat');
+        if (webchatElement && window.botpress) {
+          initWebchat();
+        } else {
+          requestAnimationFrame(waitForWebchatAndInit);
+        }
+      };
 
-        setTimeout(() => clearInterval(interval), 5000);
+      waitForWebchatAndInit();
+
       } catch (error) {
         console.error('Botpress initialization failed:', error);
       }
@@ -130,6 +133,19 @@ function Dashboard() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [location.pathname]);
+
+  useEffect(() => {
+    // Hapus botpress script jika logout
+    return () => {
+      const script = document.getElementById('botpress-webchat-script');
+      if (script) script.remove();
+
+      // Bersihkan state global botpress
+      if (window.botpress) {
+        delete window.botpress;
+      }
+    };
+  }, []);
 
   return (
     <>
