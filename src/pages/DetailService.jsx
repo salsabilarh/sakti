@@ -212,6 +212,31 @@ function DetailService() {
               </DetailCard>
             )}
 
+            {service.revenues?.length > 0 && (
+              <DetailCard icon={<BarChart className="w-5 h-5 text-green-600" />} title="Pelanggan Jasa" delay={0.65}>
+                <div className="rounded overflow-hidden border border-gray-200">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="py-2 px-4 text-left">Unit</th>
+                        <th className="py-2 px-4 text-left">Pelanggan</th>
+                        {/* <th className="py-2 px-4 text-right">Pendapatan</th> */}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {service.revenues.map((rev) => (
+                        <tr key={rev.id} className="border-t">
+                          <td className="py-2 px-4">{rev.unit?.name || '-'}</td>
+                          <td className="py-2 px-4">{rev.customer_name}</td>
+                          {/* <td className="py-2 px-4 text-right">Rp {parseFloat(rev.revenue).toLocaleString('id-ID')}</td> */}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </DetailCard>
+            )}
+
             {service.marketing_kits?.length > 0 && (
               <DetailCard icon={<Download className="w-5 h-5 text-indigo-600" />} title="Marketing Kit" delay={0.6}>
                 <div className="rounded overflow-hidden border border-gray-200">

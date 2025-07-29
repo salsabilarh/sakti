@@ -34,6 +34,15 @@ function DaftarJasa() {
   const cannotEdit = user?.role === 'viewer' || user?.role === 'pdo' || user?.unit?.type === 'cabang';
   const canViewDetail = !!user; // Selama user terautentikasi, bisa lihat detail
 
+  const [showRevenueModal, setShowRevenueModal] = useState(false);
+  const [revenueForm, setRevenueForm] = useState({
+    service_id: null,
+    customer_name: '',
+    revenue: '',
+    unit_id: '',
+  });
+  const [unitList, setUnitList] = useState([]);
+
   // Fetch data filter portfolio & sektor
   useEffect(() => {
     const fetchOptions = async () => {
@@ -103,6 +112,24 @@ function DaftarJasa() {
       fetchServices();
     }
   }, [searchTerm, selectedPortfolioId, selectedSectorId, page, limit, sortBy, sortOrder, authToken]);
+
+  useEffect(() => {
+    const fetchUnits = async () => {
+      try {
+        const res = await fetch('https://api-sakti-production.up.railway.app/api/units', {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        const data = await res.json();
+        setUnitList(data.units || []);
+      } catch (err) {
+        console.error('Gagal mengambil data unit:', err);
+      }
+    };
+
+    if (authToken) {
+      fetchUnits();
+    }
+  }, [authToken]);
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -308,7 +335,7 @@ function DaftarJasa() {
                         <div className="flex justify-center items-center gap-x-2">
                           {canViewDetail && (
                             <Link to={`/service/${service.id}`}>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" className="py-5">
                                 <Eye className="w-4 h-4 mr-1" />
                                 Detail
                               </Button>
@@ -316,15 +343,26 @@ function DaftarJasa() {
                           )}
                           {!cannotEdit && (
                             <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-green-600 border-green-600 py-5"
+                                onClick={() => {
+                                  setRevenueForm({ service_id: service.id, customer_name: '', revenue: '', unit_id: '' });
+                                  setShowRevenueModal(true);
+                                }}
+                              >
+                                Tambah Pelanggan
+                              </Button>
                               <Link to={`/edit-service/${service.id}`}>
-                                <Button variant="outline" size="sm" className="text-blue-600 border-blue-600">
+                                <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 py-5">
                                   Edit
                                 </Button>
                               </Link>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-red-600 border-red-600"
+                                className="text-red-600 border-red-600 py-5"
                                 onClick={() => handleDelete(service.id)}
                               >
                                 Hapus
@@ -376,6 +414,78 @@ function DaftarJasa() {
             </div>
           )}
         </motion.div>
+
+        {showRevenueModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex justify-center items-center z-50">
+            <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+              <h2 className="text-lg font-semibold mb-4">Tambah Pendapatan Layanan</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm mb-1">Nama Pelanggan</label>
+                  <Input
+                    value={revenueForm.customer_name}
+                    onChange={(e) => setRevenueForm({ ...revenueForm, customer_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Pendapatan (Rp)</label>
+                  <Input
+                    type="number"
+                    value={revenueForm.revenue}
+                    onChange={(e) => setRevenueForm({ ...revenueForm, revenue: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Unit</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-md px-2 py-2"
+                    value={revenueForm.unit_id}
+                    onChange={(e) => setRevenueForm({ ...revenueForm, unit_id: e.target.value })}
+                  >
+                    <option value="">Pilih Unit</option>
+                    {unitList.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowRevenueModal(false)}>Batal</Button>
+                <Button onClick={async () => {
+                  try {
+                    const res = await fetch(`https://api-sakti-production.up.railway.app/api/services/${revenueForm.service_id}/revenue`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${authToken}`,
+                      },
+                      body: JSON.stringify({
+                        customer_name: revenueForm.customer_name,
+                        revenue: revenueForm.revenue,
+                        unit_id: revenueForm.unit_id,
+                      }),
+                    });
+
+                    const result = await res.json();
+                    if (!res.ok) throw new Error(result.error || 'Gagal tambah revenue');
+
+                    alert('Pendapatan berhasil ditambahkan');
+                    setShowRevenueModal(false);
+                  } catch (err) {
+                    alert(`Gagal tambah pendapatan: ${err.message}`);
+                  }
+                }}>
+                  Simpan
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   );
