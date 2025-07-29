@@ -136,7 +136,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
                             key={service.id}
                             className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 mr-1"
                           >
-                            {service.code ? `${service.code} - ${service.name}` : service.name}
+                            {service.code}
                             <button
                               type="button"
                               onClick={(e) => {
