@@ -26,6 +26,7 @@ import {
 import UploadFile from '@/components/admin/UploadFile.jsx';
 import EditFormModal from '@/components/admin/EditFormModal.jsx';
 import { useToast } from '@/components/ui/use-toast.js';
+import ResponsiveSelect from '@/components/ui/ResponsiveSelect.jsx';
 
 function MarketingKit() {
   const [kits, setKits] = useState([]);
@@ -78,7 +79,7 @@ function MarketingKit() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await fetch('https://api-sakti-production.up.railway.app/api/services', {
+        const res = await fetch('https://api-sakti-production.up.railway.app/api/services?limit=9999', {
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
@@ -217,37 +218,23 @@ function MarketingKit() {
                   className="pl-10"
                 />
               </div>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipe File</label>
-                  <select
-                    value={selectedPortfolio}
-                    onChange={(e) => setSelectedPortfolio(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000476]"
-                  >
-                    <option value="">Semua Tipe File</option>
-                    {portfolios.map((portfolio) => (
-                      <option key={portfolio} value={portfolio}>
-                        {portfolio}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Layanan</label>
-                  <select
-                    value={selectedService}
-                    onChange={(e) => setSelectedService(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#000476]"
-                  >
-                    <option value="">Semua Layanan</option>
-                    {services.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <ResponsiveSelect
+                  label="Tipe File"
+                  value={selectedPortfolio}
+                  onChange={(e) => setSelectedPortfolio(e.target.value)}
+                  options={portfolios.map((p) => ({ value: p, label: p }))}
+                  placeholder="Semua Tipe File"
+                />
+
+                <ResponsiveSelect
+                  label="Layanan"
+                  value={selectedService}
+                  onChange={(e) => setSelectedService(e.target.value)}
+                  options={services.map((s) => ({ value: s.id, label: s.name }))}
+                  placeholder="Semua Layanan"
+                />
+
                 <div className="flex items-end">
                   <Button
                     variant="outline"
