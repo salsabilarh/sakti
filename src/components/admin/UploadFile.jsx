@@ -35,6 +35,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
   const { authToken } = useAuth();
   const [services, setServices] = useState([]);
   const [name, setName] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -160,11 +161,22 @@ function UploadFile({ onUploadSuccess, onClose }) {
                 </PopoverTrigger>
                 <PopoverContent className="min-w-full max-w-sm p-0">
                   <Command>
-                    <CommandInput placeholder="Cari layanan..." />
+                    <CommandInput
+                      placeholder="Cari layanan..."
+                      onValueChange={(value) => setSearchTerm(value.toLowerCase())}
+                    />
                     <CommandList>
                       <CommandEmpty>Layanan tidak ditemukan.</CommandEmpty>
                       <CommandGroup>
-                        {services.map((service) => {
+                        {services
+                          .filter((service) => {
+                            const keyword = searchTerm.trim().toLowerCase();
+                            if (!keyword) return true;
+                            const nameMatch = service.name?.toLowerCase().split(' ').some(word => word.startsWith(keyword));
+                            const codeMatch = service.code?.toLowerCase().startsWith(keyword);
+                            return nameMatch || codeMatch;
+                          })
+                          .map((service) => {
                           const isSelected = serviceIds.includes(service.id.toString());
                           return (
                             <CommandItem
