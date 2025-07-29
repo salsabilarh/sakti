@@ -13,7 +13,7 @@ export function useAuth() {
 
 export const ROLES = {
   ADMIN: 'admin',
-  MANAJEMEN: 'manajemen',
+  MANAJEMEN: 'management',
   PDO: 'pdo',
   VIEWER: 'viewer',
 };

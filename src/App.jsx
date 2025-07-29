@@ -111,7 +111,7 @@ function AppRoutes() {
       } /> */}
       <Route path="/marketing-kit" element={
         <ProtectedRoute>
-          <RoleProtectedRoute allowedRoles={['admin', 'manajemen', 'pdo']}>
+          <RoleProtectedRoute allowedRoles={['admin', 'management', 'pdo']}>
             <DashboardLayout>
               <MarketingKit />
             </DashboardLayout>
