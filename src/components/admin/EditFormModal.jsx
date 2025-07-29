@@ -132,7 +132,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full flex-wrap justify-start gap-2 text-left min-h-[2.5rem]"
+                    className="w-full flex flex-wrap justify-start items-start min-h-[5rem] gap-2 overflow-y-auto max-h-40 text-left"
                   >
                     {serviceIds.length > 0 ? (
                       serviceIds.map(id => {
