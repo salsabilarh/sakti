@@ -38,7 +38,7 @@ const RegistrationPage = () => {
     role: '',
   });
 
-  const shouldShowUnitKerja = formData.role && !['admin', 'viewer'].includes(formData.role);
+  const shouldShowUnitKerja = formData.role && !['admin'].includes(formData.role);
   const validRoles = ['admin', 'management', 'viewer', 'pdo'];
 
   useEffect(() => {
@@ -55,7 +55,7 @@ const RegistrationPage = () => {
   }, []);
 
   useEffect(() => {
-    if (formData.role === 'admin' || formData.role === 'viewer') {
+    if (formData.role === 'admin') {
       setFormData((prev) => ({ ...prev, workUnit: '' }));
     }
   }, [formData.role]);

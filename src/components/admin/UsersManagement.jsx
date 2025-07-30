@@ -84,8 +84,8 @@ function UsersManagement() {
     }
   };
 
-  const shouldShowUnitKerja = newUser.role && !['admin', 'viewer'].includes(newUser.role);
-  const shouldShowUnitKerjaEdit = editingUser?.role && !['admin', 'viewer'].includes(editingUser.role);
+  const shouldShowUnitKerja = newUser.role && !['admin'].includes(newUser.role);
+  const shouldShowUnitKerjaEdit = editingUser?.role && !['admin'].includes(editingUser.role);
 
   useEffect(() => {
     fetchUsers();
@@ -93,13 +93,13 @@ function UsersManagement() {
   }, [searchTerm, filters, currentPage]);
 
   useEffect(() => {
-    if (newUser.role === 'admin' || newUser.role === 'viewer') {
+    if (newUser.role === 'admin') {
       setNewUser((prev) => ({ ...prev, workUnitId: '' }));
     }
   }, [newUser.role]);
 
   useEffect(() => {
-    if (editingUser?.role === 'admin' || editingUser?.role === 'viewer') {
+    if (editingUser?.role === 'admin') {
       setEditingUser((prev) => ({ ...prev, workUnitId: '' }));
     }
   }, [editingUser?.role]);
@@ -187,7 +187,7 @@ function UsersManagement() {
   };
 
   const handleSaveUser = async () => {
-    if (!editingUser.workUnitId && !['admin', 'viewer'].includes(editingUser.role)) {
+    if (!editingUser.workUnitId && !['admin'].includes(editingUser.role)) {
       return toast({
         title: "Unit Kerja wajib dipilih",
         variant: "destructive",
@@ -234,7 +234,7 @@ function UsersManagement() {
       });
     }
 
-    if (role !== 'admin' && role !== 'viewer' && !workUnitId) {
+    if (role !== 'admin' && !workUnitId) {
       return toast({
         title: "Unit Kerja wajib dipilih",
         variant: "destructive",
@@ -246,7 +246,7 @@ function UsersManagement() {
         full_name: name,
         email,
         role,
-        unit_kerja_id: role === 'admin' || role === 'viewer' ? null : workUnitId,
+        unit_kerja_id: role === 'admin' ? null : workUnitId,
         is_active,
       });
 
