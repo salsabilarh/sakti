@@ -202,11 +202,11 @@ function LoginPage() {
             transition={{ duration: 0.6 }} 
             className="w-full max-w-md"
           >
-            <div className="mb-8 self-start">
+            <div className="mb-4 self-start">
               <img 
                 src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png" 
                 alt="SAKTI Logo" 
-                className="h-12 mb-6" 
+                className="h-24 object-contain" 
               />
               <h2 className="text-3xl font-bold text-gray-900">Selamat Datang</h2>
               <p className="text-gray-600 mt-2">Masuk untuk melanjutkan ke SAKTI Platform.</p>
@@ -278,7 +278,7 @@ function LoginPage() {
           initial={{ opacity: 0, x: 50 }} 
           animate={{ opacity: 1, x: 0 }} 
           transition={{ duration: 0.6, delay: 0.2 }} 
-          className="hidden lg:flex flex-col items-center justify-center p-8 bg-gray-50 h-screen"
+          className="hidden lg:flex flex-col items-center justify-center p-8 bg-white h-screen"
         >
           <div className="chatbot-container w-full max-w-[550px] flex flex-col items-center text-center">
             <h2 className="text-2xl font-bold text-[#000476] mb-2">

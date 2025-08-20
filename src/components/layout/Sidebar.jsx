@@ -27,9 +27,13 @@ function Sidebar({ isMobileOpen, onToggleMobile }) {
 
   const sidebarContent = (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-      <div className="p-6 border-b border-gray-200">
-        <Link to="/" className="flex items-center space-x-2">
-          <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png" alt="SAKTI Logo" className="h-8" />
+      <div className="p-4 border-b border-gray-200 flex items-center justify-center">
+        <Link to="/" className="flex items-center">
+          <img 
+            src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png" 
+            alt="SAKTI Logo" 
+            className="h-14 object-contain"
+          />
         </Link>
       </div>
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">

@@ -52,12 +52,17 @@ function UploadFile({ onUploadSuccess, onClose }) {
     if (authToken) fetchServices();
   }, [authToken]);
 
+
   const handleFileUpload = async (e) => {
     e.preventDefault();
     setUploadedFiles([]);
 
     if (uploadFiles.length === 0) {
-      toast({ title: "Form tidak lengkap", description: "Minimal pilih 1 file", variant: "destructive" });
+      toast({ 
+        title: "Form tidak lengkap", 
+        description: "Minimal pilih 1 file", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -67,7 +72,6 @@ function UploadFile({ onUploadSuccess, onClose }) {
       formData.append("file_types[]", item.fileType);
     });
 
-    // kirim sekali untuk semua layanan terkait
     serviceIds.forEach(id => {
       formData.append("service_ids[]", id);
     });
@@ -84,7 +88,9 @@ function UploadFile({ onUploadSuccess, onClose }) {
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Gagal mengunggah file');
+      if (!response.ok) {
+        throw new Error(result.error || result.message || "Gagal mengunggah file");
+      }
 
       toast({
         title: 'Berhasil!',
@@ -100,9 +106,10 @@ function UploadFile({ onUploadSuccess, onClose }) {
       onClose?.();
     } catch (error) {
       console.error('Upload error:', error);
+
       toast({
         title: 'Upload Gagal',
-        description: error.message,
+        description: error.message, // tampilkan pesan detail dari backend
         variant: 'destructive',
       });
     } finally {
