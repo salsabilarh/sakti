@@ -56,19 +56,21 @@ function UploadFile({ onUploadSuccess, onClose }) {
     e.preventDefault();
     setUploadedFiles([]);
 
-    if (uploadFiles.length === 0 || !fileType || serviceIds.length === 0) {
-      toast({
-        title: 'Form tidak lengkap',
-        description: 'Mohon lengkapi semua field yang diperlukan',
-        variant: 'destructive',
-      });
+    if (uploadFiles.length === 0) {
+      toast({ title: "Form tidak lengkap", description: "Minimal pilih 1 file", variant: "destructive" });
       return;
     }
 
     const formData = new FormData();
-    formData.append('file_type', fileType);
-    serviceIds.forEach((id) => formData.append('service_ids[]', id));
-    uploadFiles.forEach((file) => formData.append('files', file)); // multiple
+    uploadFiles.forEach(item => {
+      formData.append("files", item.file);
+      formData.append("file_types[]", item.fileType);
+    });
+
+    // kirim sekali untuk semua layanan terkait
+    serviceIds.forEach(id => {
+      formData.append("service_ids[]", id);
+    });
 
     setLoading(true);
 
@@ -115,7 +117,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleFileUpload} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             {/* Multi-select Services */}
             <div>
               <Label htmlFor="services">Layanan Terkait</Label>
@@ -207,23 +209,6 @@ function UploadFile({ onUploadSuccess, onClose }) {
                 </PopoverContent>
               </Popover>
             </div>
-
-            {/* File Type */}
-            <div>
-              <Label htmlFor="fileType">Tipe File</Label>
-              <Select onValueChange={setFileType} value={fileType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih tipe file" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Flyer">Flyer</SelectItem>
-                  <SelectItem value="Pitch Deck">Pitch Deck</SelectItem>
-                  <SelectItem value="Brochure">Brochure</SelectItem>
-                  <SelectItem value="Technical Document">Technical Document</SelectItem>
-                  <SelectItem value="Others">Others</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* File Upload */}
@@ -235,35 +220,62 @@ function UploadFile({ onUploadSuccess, onClose }) {
               multiple
               onChange={(e) => {
                 const files = Array.from(e.target.files);
-                setUploadFiles((prev) => [...prev, ...files]);
-                e.target.value = ""; // reset supaya bisa pilih file sama berulang
+                const newFiles = files.map(f => ({
+                  file: f,
+                  fileType: ""
+                }));
+                setUploadFiles(prev => [...prev, ...newFiles]);
+                e.target.value = "";
               }}
               accept=".pdf,.doc,.docx,.ppt,.pptx"
             />
             <p className="text-sm text-gray-500 mt-1">
-              Bisa pilih lebih dari satu file. Format didukung: PDF, DOC, DOCX, PPT, PPTX
+              Format yang didukung: PDF, DOC, DOCX, PPT, PPTX
             </p>
 
-            {/* Badge-style preview */}
+            {/* Preview file + tipe file */}
             {uploadFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {uploadFiles.map((file, idx) => (
-                  <span
+              <div className="mt-4 space-y-3">
+                {uploadFiles.map((item, idx) => (
+                  <div
                     key={idx}
-                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800"
+                    className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50"
                   >
-                    {file.name}
+                    {/* Nama file */}
+                    <span className="flex-1 text-sm font-medium truncate">
+                      {item.file.name}
+                    </span>
+
+                    {/* Pilih tipe file */}
+                    <Select
+                      value={item.fileType}
+                      onValueChange={(val) => {
+                        const copy = [...uploadFiles];
+                        copy[idx].fileType = val;
+                        setUploadFiles(copy);
+                      }}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Pilih tipe file" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Flyer">Flyer</SelectItem>
+                        <SelectItem value="Pitch Deck">Pitch Deck</SelectItem>
+                        <SelectItem value="Brochure">Brochure</SelectItem>
+                        <SelectItem value="Technical Document">Technical Document</SelectItem>
+                        <SelectItem value="Others">Others</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Tombol hapus */}
                     <button
                       type="button"
-                      onClick={() =>
-                        setUploadFiles((prev) => prev.filter((_, i) => i !== idx))
-                      }
-                      className="ml-1 text-red-600 hover:text-red-800 font-bold"
-                      title="Hapus file"
+                      onClick={() => setUploadFiles(prev => prev.filter((_, i) => i !== idx))}
+                      className="text-red-600 hover:text-red-800 font-bold"
                     >
                       &times;
                     </button>
-                  </span>
+                  </div>
                 ))}
               </div>
             )}
