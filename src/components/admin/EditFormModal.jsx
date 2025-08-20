@@ -60,7 +60,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!name || !fileType || serviceIds.length === 0) {
+    if ( !fileType || serviceIds.length === 0) {
       toast({
         title: 'Form tidak lengkap',
         description: 'Mohon lengkapi semua field yang diperlukan',
@@ -70,7 +70,6 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
     }
 
     const formData = new FormData();
-    formData.append('name', name);
     formData.append('file_type', fileType);
     serviceIds.forEach(id => formData.append('service_ids[]', id));
     if (uploadFile) formData.append('file', uploadFile);
@@ -90,7 +89,7 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
 
       toast({
         title: 'Berhasil!',
-        description: `${name} berhasil diperbarui.`,
+        description: `File berhasil diperbarui.`,
       });
 
       onUpdateSuccess?.();
@@ -222,17 +221,6 @@ function EditFormModal({ open, onOpenChange, file, services, authToken, onUpdate
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          {/* File Name */}
-          <div>
-            <Label>Nama File</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Masukkan nama file"
-              required
-            />
           </div>
 
           {/* Pilih File */}

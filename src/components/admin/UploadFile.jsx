@@ -25,11 +25,11 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
 function UploadFile({ onUploadSuccess, onClose }) {
-  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadFiles, setUploadFiles] = useState([]); // array of files
   const [fileType, setFileType] = useState('');
   const [serviceIds, setServiceIds] = useState([]);
   const [open, setOpen] = useState(false);
-  const [uploadedFileUrl, setUploadedFileUrl] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { authToken } = useAuth();
@@ -54,8 +54,9 @@ function UploadFile({ onUploadSuccess, onClose }) {
 
   const handleFileUpload = async (e) => {
     e.preventDefault();
-    setUploadedFileUrl('');
-    if (!uploadFile || !fileType || serviceIds.length === 0) {
+    setUploadedFiles([]);
+
+    if (uploadFiles.length === 0 || !fileType || serviceIds.length === 0) {
       toast({
         title: 'Form tidak lengkap',
         description: 'Mohon lengkapi semua field yang diperlukan',
@@ -65,10 +66,9 @@ function UploadFile({ onUploadSuccess, onClose }) {
     }
 
     const formData = new FormData();
-    formData.append('name', name);
-    formData.append('file', uploadFile);
     formData.append('file_type', fileType);
-    serviceIds.forEach(id => formData.append('service_ids[]', id));
+    serviceIds.forEach((id) => formData.append('service_ids[]', id));
+    uploadFiles.forEach((file) => formData.append('files', file)); // multiple
 
     setLoading(true);
 
@@ -86,14 +86,13 @@ function UploadFile({ onUploadSuccess, onClose }) {
 
       toast({
         title: 'Berhasil!',
-        description: `${uploadFile.name} telah diunggah ke sistem.`,
+        description: `${uploadFiles.length} file telah diunggah ke sistem.`,
       });
 
-      setUploadedFileUrl(result.marketing_kit?.file_url || '');
-      setUploadFile(null);
+      setUploadedFiles(result.marketing_kits || []);
+      setUploadFiles([]);
       setFileType('');
       setServiceIds([]);
-      setName('');
       e.target.reset?.();
       onUploadSuccess?.();
       onClose?.();
@@ -110,7 +109,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
   };
 
   return (
-    <Card className="border-0 shadow-lg">
+    <Card className="border-0 shadow-lg bg-white">
       <CardHeader>
         <CardTitle>Upload File Marketing</CardTitle>
       </CardHeader>
@@ -227,31 +226,47 @@ function UploadFile({ onUploadSuccess, onClose }) {
             </div>
           </div>
 
-          {/* Nama File */}
-          <div>
-            <Label htmlFor="name">Nama File</Label>
-            <Input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Masukkan nama file yang ditampilkan"
-              required
-            />
-          </div>
-
           {/* File Upload */}
           <div>
             <Label htmlFor="file">Pilih File</Label>
             <Input
               id="file"
               type="file"
-              onChange={(e) => setUploadFile(e.target.files[0])}
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files);
+                setUploadFiles((prev) => [...prev, ...files]);
+                e.target.value = ""; // reset supaya bisa pilih file sama berulang
+              }}
               accept=".pdf,.doc,.docx,.ppt,.pptx"
             />
             <p className="text-sm text-gray-500 mt-1">
-              Format yang didukung: PDF, DOC, DOCX, PPT, PPTX
+              Bisa pilih lebih dari satu file. Format didukung: PDF, DOC, DOCX, PPT, PPTX
             </p>
+
+            {/* Badge-style preview */}
+            {uploadFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {uploadFiles.map((file, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800"
+                  >
+                    {file.name}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setUploadFiles((prev) => prev.filter((_, i) => i !== idx))
+                      }
+                      className="ml-1 text-red-600 hover:text-red-800 font-bold"
+                      title="Hapus file"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <Button type="submit" style={{ backgroundColor: '#000476' }} disabled={loading}>
@@ -263,18 +278,26 @@ function UploadFile({ onUploadSuccess, onClose }) {
             )}
           </Button>
 
-          {uploadedFileUrl && (
-            <p className="mt-4 text-sm text-green-600">
-              File berhasil diunggah.{' '}
-              <a
-                href={uploadedFileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-blue-600"
-              >
-                Download file di sini
-              </a>
-            </p>
+          {uploadedFiles.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-sm text-green-600 font-medium">
+                {uploadedFiles.length} file berhasil diunggah:
+              </p>
+              <ul className="list-disc list-inside text-sm text-blue-700">
+                {uploadedFiles.map((file) => (
+                  <li key={file.id}>
+                    <a
+                      href={file.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      {file.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </form>
       </CardContent>
