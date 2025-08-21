@@ -17,6 +17,7 @@ function LoginPage() {
   const [botpressLoaded, setBotpressLoaded] = useState(false);
   const [initializationAttempt, setInitializationAttempt] = useState(0);
 
+  // Refs
   const scriptLoaded = useRef(false);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -40,7 +41,9 @@ function LoginPage() {
       }
 
       const existingScript = document.getElementById('botpress-webchat-script');
-      if (existingScript) existingScript.remove();
+      if (existingScript) {
+        existingScript.remove();
+      }
 
       const script = document.createElement('script');
       script.src = 'https://cdn.botpress.cloud/webchat/v3.1/inject.js';
@@ -59,23 +62,34 @@ function LoginPage() {
 
   // Initialize Botpress
   const initializeBotpress = useCallback(async () => {
-    if (!window.botpress || typeof window.botpress.init !== 'function') {
-      console.warn('Botpress not ready yet');
-      return false;
-    }
-
     try {
+      if (!window.botpress || typeof window.botpress.init !== 'function') {
+        console.warn('Botpress not ready yet');
+        return false;
+      }
+
       const config = {
-        botId: 'af2b4fff-fd14-404d-8184-543b5bc9349b', // pastikan sesuai
-        clientId: '471604bd-75df-43c1-80b9-908e3cdf7338', // pastikan sesuai
+        botId: 'af2b4fff-fd14-404d-8184-543b5bc9349b',
+        clientId: '471604bd-75df-43c1-80b9-908e3cdf7338',
         selector: '#webchat',
         configuration: {
           version: 'v1',
           botName: 'SAKTI Assistant',
           botAvatar: 'https://files.bpcontent.cloud/2025/07/27/09/20250727093652-HSRR0UDX.png',
-          website: { title: 'https://www.sucofindo.co.id/', link: 'https://www.sucofindo.co.id/' },
-          email: { title: 'customer.service@sucofindo.co.id', link: 'customer.service@sucofindo.co.id' },
-          phone: { title: '+62217983666', link: '+62217983666' },
+          website: {
+            title: 'https://www.sucofindo.co.id/',
+            link: 'https://www.sucofindo.co.id/'
+          },
+          email: {
+            title: 'customer.service@sucofindo.co.id',
+            link: 'customer.service@sucofindo.co.id'
+          },
+          phone: {
+            title: '+62217983666',
+            link: '+62217983666'
+          },
+          termsOfService: {},
+          privacyPolicy: {},
           color: '#000476',
           variant: 'solid',
           headerVariant: 'solid',
@@ -100,14 +114,14 @@ function LoginPage() {
     }
   }, []);
 
-  // Main init with retry (max 4 attempts)
+  // Main init
   const initializeBotpressChats = useCallback(async () => {
     try {
       await loadBotpressScript();
       await new Promise(r => setTimeout(r, 500));
 
       const success = await initializeBotpress();
-      if (!success && initializationAttempt < 3) {
+      if (!success) {
         setTimeout(() => {
           setInitializationAttempt(prev => prev + 1);
         }, 2000);
@@ -115,15 +129,13 @@ function LoginPage() {
     } catch (err) {
       console.error(err);
     }
-  }, [loadBotpressScript, initializeBotpress, initializationAttempt]);
+  }, [loadBotpressScript, initializeBotpress]);
 
   useEffect(() => {
-    if (initializationAttempt <= 3) {
-      const timer = setTimeout(() => {
-        initializeBotpressChats();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => {
+      initializeBotpressChats();
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [initializeBotpressChats, initializationAttempt]);
 
   // Cleanup
@@ -139,7 +151,10 @@ function LoginPage() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        toast({ title: "Login berhasil!", description: "Selamat datang di SAKTI Platform" });
+        toast({
+          title: "Login berhasil!",
+          description: "Selamat datang di SAKTI Platform"
+        });
         navigate(from, { replace: true });
       } else {
         toast({
@@ -149,7 +164,11 @@ function LoginPage() {
         });
       }
     } catch (error) {
-      toast({ title: "Terjadi kesalahan", description: "Silakan coba lagi", variant: "destructive" });
+      toast({
+        title: "Terjadi kesalahan",
+        description: "Silakan coba lagi",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
