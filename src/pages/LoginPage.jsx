@@ -15,10 +15,11 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [botpressLoaded, setBotpressLoaded] = useState(false);
-  const [initializationAttempt, setInitializationAttempt] = useState(0);
 
   // Refs
   const scriptLoaded = useRef(false);
+  const botpressInitialized = useRef(false);
+
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,7 +43,8 @@ function LoginPage() {
 
       const existingScript = document.getElementById('botpress-webchat-script');
       if (existingScript) {
-        existingScript.remove();
+        resolve(); // jangan remove, biarkan script tetap ada
+        return;
       }
 
       const script = document.createElement('script');
@@ -63,6 +65,7 @@ function LoginPage() {
   // Initialize Botpress
   const initializeBotpress = useCallback(async () => {
     try {
+      if (botpressInitialized.current) return true;
       if (!window.botpress || typeof window.botpress.init !== 'function') {
         console.warn('Botpress not ready yet');
         return false;
@@ -88,8 +91,6 @@ function LoginPage() {
             title: '+62217983666',
             link: '+62217983666'
           },
-          termsOfService: {},
-          privacyPolicy: {},
           color: '#000476',
           variant: 'solid',
           headerVariant: 'solid',
@@ -102,11 +103,13 @@ function LoginPage() {
       };
 
       await window.botpress.init(config);
+
       window.botpress.on("webchat:ready", () => {
+        setBotpressLoaded(true);
         window.botpress.open();
       });
 
-      setBotpressLoaded(true);
+      botpressInitialized.current = true;
       return true;
     } catch (err) {
       console.error('Failed to init Botpress:', err);
@@ -115,35 +118,18 @@ function LoginPage() {
   }, []);
 
   // Main init
-  const initializeBotpressChats = useCallback(async () => {
-    try {
-      await loadBotpressScript();
-      await new Promise(r => setTimeout(r, 500));
-
-      const success = await initializeBotpress();
-      if (!success) {
-        setTimeout(() => {
-          setInitializationAttempt(prev => prev + 1);
-        }, 2000);
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await loadBotpressScript();
+        await new Promise(r => setTimeout(r, 500));
+        await initializeBotpress();
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
-    }
-  }, [loadBotpressScript, initializeBotpress]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      initializeBotpressChats();
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [initializeBotpressChats, initializationAttempt]);
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      scriptLoaded.current = false;
     };
-  }, []);
+    init();
+  }, [loadBotpressScript, initializeBotpress]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -218,7 +204,7 @@ function LoginPage() {
                 <Input 
                   id="email" 
                   type="email" 
-                  placeholder="nama@sucofindo.com" 
+                  placeholder="nama@sucofindo.co.id" 
                   value={email} 
                   onChange={(e) => setEmail(e.target.value)} 
                   required 
@@ -295,11 +281,6 @@ function LoginPage() {
                     <div className="text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#000476] mx-auto mb-4"></div>
                       <p className="text-sm">Loading SAKTI Assistant...</p>
-                      {initializationAttempt > 0 && (
-                        <p className="text-xs text-gray-400 mt-2">
-                          Attempt {initializationAttempt + 1}/4
-                        </p>
-                      )}
                     </div>
                   </div>
                 )}
