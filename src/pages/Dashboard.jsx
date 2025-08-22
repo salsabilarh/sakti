@@ -13,74 +13,56 @@ function Dashboard() {
   useEffect(() => {
     const injectBotpressScript = () => {
       return new Promise((resolve, reject) => {
-        if (document.getElementById('botpress-webchat-script')) {
-          return resolve();
+        if (window.botpress) return resolve(); // sudah ada
+        let script = document.getElementById("botpress-webchat-script");
+        if (script) {
+          script.onload = resolve;
+          script.onerror = reject;
+          return;
         }
 
-        const script = document.createElement('script');
-        script.src = 'https://cdn.botpress.cloud/webchat/v3.1/inject.js';
+        script = document.createElement("script");
+        script.src = "https://cdn.botpress.cloud/webchat/v3.1/inject.js";
         script.async = true;
-        script.id = 'botpress-webchat-script';
+        script.id = "botpress-webchat-script";
         script.onload = resolve;
         script.onerror = reject;
         document.body.appendChild(script);
       });
     };
 
-    const initializeBotpress = async () => {
-      try {
-        await injectBotpressScript();
+    const initBotpress = () => {
+      if (!window.botpress) return;
 
-        const initWebchat = () => {
-          if (window.botpress && document.querySelector('#webchat')) {
-            window.botpress.on('webchat:ready', () => {
-              window.botpress.open();
-            });
+      window.botpress.init({
+        botId: "ca0e2a53-b7b1-4b4d-90e2-7b93d67b28e0",
+        clientId: "48967a19-c892-47f0-8f46-e7cfd3153a98",
+        selector: "#webchat",
+        configuration: {
+          version: "v1",
+          botName: "SAKTI Assistant",
+          botAvatar:
+            "https://files.bpcontent.cloud/2025/07/27/09/20250727092708-YXL6QMAF.png",
+          color: '#000476',
+          variant: 'solid',
+          headerVariant: 'solid',
+          themeMode: 'dark',
+          fontFamily: 'inter',
+          radius: 4,
+          feedbackEnabled: false,
+          footer: '[by SAKTI Assistant](https://botpress.com/?from=webchat)'
+        },
+      });
 
-            window.botpress.init({
-              botId: 'ca0e2a53-b7b1-4b4d-90e2-7b93d67b28e0',
-              clientId: '48967a19-c892-47f0-8f46-e7cfd3153a98',
-              selector: '#webchat',
-              configuration: {
-                version: 'v1',
-                composerPlaceholder: '',
-                botName: 'SAKTI Assistant',
-                botAvatar: 'https://files.bpcontent.cloud/2025/07/27/09/20250727092708-YXL6QMAF.png',
-                botDescription: '',
-                color: '#3276EA',
-                variant: 'solid',
-                headerVariant: 'glass',
-                themeMode: 'light',
-                fontFamily: 'inter',
-                radius: 4,
-                feedbackEnabled: false,
-                footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
-                email: {
-                  title: 'm.alfarisi@sucofindo.co.id',
-                  link: 'm.alfarisi@sucofindo.co.id'
-                }
-              }
-            });
-          }
-        };
-
-        const waitForWebchatAndInit = () => {
-        const webchatElement = document.querySelector('#webchat');
-        if (webchatElement && window.botpress) {
-          initWebchat();
-        } else {
-          requestAnimationFrame(waitForWebchatAndInit);
-        }
-      };
-
-      waitForWebchatAndInit();
-
-      } catch (error) {
-        console.error('Botpress initialization failed:', error);
-      }
+      // Buka otomatis setelah init
+      setTimeout(() => window.botpress.open(), 500);
     };
 
-    initializeBotpress();
+    if (location.pathname === "/dashboard") {
+      injectBotpressScript().then(() => {
+        initBotpress();
+      });
+    }
   }, [location.pathname]);
 
   useEffect(() => {

@@ -94,7 +94,7 @@ function LoginPage() {
           color: '#000476',
           variant: 'solid',
           headerVariant: 'solid',
-          themeMode: 'light',
+          themeMode: 'dark',
           fontFamily: 'inter',
           radius: 4,
           feedbackEnabled: false,
