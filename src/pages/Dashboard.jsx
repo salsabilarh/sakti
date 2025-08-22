@@ -50,7 +50,7 @@ function Dashboard() {
           fontFamily: 'inter',
           radius: 4,
           feedbackEnabled: false,
-          footer: '[by SAKTI Assistant](https://botpress.com/?from=webchat)'
+          footer: ''
         },
       });
 
