@@ -16,9 +16,12 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [botpressLoaded, setBotpressLoaded] = useState(false);
   const [initializationAttempt, setInitializationAttempt] = useState(0);
-
-  // Refs
+  
+  // Refs untuk mencegah multiple initialization
+  const desktopInitialized = useRef(false);
+  const mobileInitialized = useRef(false);
   const scriptLoaded = useRef(false);
+
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,14 +35,16 @@ function LoginPage() {
     }
   }, [isAuthenticated, navigate, from]);
 
-  // Load Botpress script
+  // Function untuk memuat script Botpress
   const loadBotpressScript = useCallback(() => {
     return new Promise((resolve, reject) => {
+      // Jika script sudah dimuat sebelumnya
       if (scriptLoaded.current && window.botpress) {
         resolve();
         return;
       }
 
+      // Hapus script lama jika ada
       const existingScript = document.getElementById('botpress-webchat-script');
       if (existingScript) {
         existingScript.remove();
@@ -49,98 +54,174 @@ function LoginPage() {
       script.src = 'https://cdn.botpress.cloud/webchat/v3.1/inject.js';
       script.async = true;
       script.id = 'botpress-webchat-script';
-
+      
       script.onload = () => {
-        scriptLoaded.current = true;
-        resolve();
+        console.log('Botpress script loaded');
+        
+        // Tunggu sampai window.botpress tersedia
+        const waitForBotpress = (attempts = 0) => {
+          if (window.botpress && typeof window.botpress.init === 'function') {
+            scriptLoaded.current = true;
+            resolve();
+          } else if (attempts < 50) { // Increased attempts
+            setTimeout(() => waitForBotpress(attempts + 1), 100);
+          } else {
+            reject(new Error('Botpress object not available after script load'));
+          }
+        };
+        
+        waitForBotpress();
       };
-      script.onerror = (err) => reject(err);
-
+      
+      script.onerror = (error) => {
+        console.error('Failed to load Botpress script:', error);
+        reject(new Error('Failed to load Botpress script'));
+      };
+      
       document.head.appendChild(script);
     });
   }, []);
 
-  // Initialize Botpress
-  const initializeBotpress = useCallback(async () => {
+  // Function untuk inisialisasi Botpress pada selector tertentu
+  const initializeBotpress = useCallback(async (selector, isDesktop = true) => {
     try {
+      console.log(`Attempting to initialize Botpress for ${selector}`);
+      
+      // Check if already initialized
+      if (isDesktop && desktopInitialized.current) {
+        console.log('Desktop Botpress already initialized');
+        return;
+      }
+      if (!isDesktop && mobileInitialized.current) {
+        console.log('Mobile Botpress already initialized');
+        return;
+      }
+
       if (!window.botpress || typeof window.botpress.init !== 'function') {
-        console.warn('Botpress not ready yet');
+        console.warn('Botpress not available yet');
         return false;
       }
 
-      const config = {
-        botId: 'af2b4fff-fd14-404d-8184-543b5bc9349b',
-        clientId: '471604bd-75df-43c1-80b9-908e3cdf7338',
-        selector: '#webchat',
+      const element = document.querySelector(selector);
+      if (!element) {
+        console.warn(`Element with selector ${selector} not found`);
+        return false;
+      }
+
+      // Clear existing content
+      element.innerHTML = '';
+
+      // Configure Botpress
+      const botpressConfig = {
+        botId: 'ca0e2a53-b7b1-4b4d-90e2-7b93d67b28e0',
+        clientId: '48967a19-c892-47f0-8f46-e7cfd3153a98',
+        selector: selector,
         configuration: {
           version: 'v1',
           botName: 'SAKTI Assistant',
           botAvatar: 'https://files.bpcontent.cloud/2025/07/27/09/20250727093652-HSRR0UDX.png',
-          website: {
-            title: 'https://www.sucofindo.co.id/',
-            link: 'https://www.sucofindo.co.id/'
-          },
-          email: {
-            title: 'customer.service@sucofindo.co.id',
-            link: 'customer.service@sucofindo.co.id'
-          },
-          phone: {
-            title: '+62217983666',
-            link: '+62217983666'
-          },
-          termsOfService: {},
-          privacyPolicy: {},
-          color: '#000476',
+          color: '#3276EA',
           variant: 'solid',
-          headerVariant: 'solid',
+          headerVariant: 'glass',
           themeMode: 'light',
           fontFamily: 'inter',
           radius: 4,
           feedbackEnabled: false,
-          footer: '[by SAKTI Assistant](https://botpress.com/?from=webchat)'
+          footer: '[⚡ SAKTI Assistant](https://botpress.com/?from=webchat)',
+          email: {
+            title: 'customer.service@sucofindo.co.id',
+            link: 'mailto:customer.service@sucofindo.co.id',
+          },
         }
       };
 
-      await window.botpress.init(config);
-      window.botpress.on("webchat:ready", () => {
-        window.botpress.open();
-      });
+      // Initialize Botpress
+      await window.botpress.init(botpressConfig);
+      
+      // Mark as initialized
+      if (isDesktop) {
+        desktopInitialized.current = true;
+      } else {
+        mobileInitialized.current = true;
+      }
 
-      setBotpressLoaded(true);
+      console.log(`Botpress successfully initialized for ${selector}`);
+
+      // Set up event listeners
+      if (window.botpress.on) {
+        window.botpress.on('webchat:ready', () => {
+          console.log(`Webchat ready for ${selector}`);
+          // Auto-open after a delay
+          setTimeout(() => {
+            if (window.botpress && typeof window.botpress.open === 'function') {
+              window.botpress.open();
+            }
+          }, 1500);
+        });
+      }
+
       return true;
-    } catch (err) {
-      console.error('Failed to init Botpress:', err);
+    } catch (error) {
+      console.error(`Failed to initialize Botpress for ${selector}:`, error);
       return false;
     }
   }, []);
 
-  // Main init
+  // Main initialization function
   const initializeBotpressChats = useCallback(async () => {
     try {
+      console.log('Starting Botpress initialization...');
+      
+      // Load script first
       await loadBotpressScript();
-      await new Promise(r => setTimeout(r, 500));
-
-      const success = await initializeBotpress();
-      if (!success) {
+      setBotpressLoaded(true);
+      
+      // Wait a bit for DOM to be stable
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Try to initialize both chats
+      const desktopSuccess = await initializeBotpress('#webchat', true);
+      const mobileSuccess = await initializeBotpress('#webchat-mobile', false);
+      
+      if (desktopSuccess || mobileSuccess) {
+        console.log('At least one Botpress instance initialized successfully');
+      } else {
+        console.warn('Failed to initialize any Botpress instance');
+        // Retry after a delay
         setTimeout(() => {
           setInitializationAttempt(prev => prev + 1);
         }, 2000);
       }
-    } catch (err) {
-      console.error(err);
+      
+    } catch (error) {
+      console.error('Failed to initialize Botpress chats:', error);
+      setBotpressLoaded(false);
+      
+      // Retry mechanism
+      if (initializationAttempt < 3) {
+        console.log(`Retry attempt ${initializationAttempt + 1}/3`);
+        setTimeout(() => {
+          setInitializationAttempt(prev => prev + 1);
+        }, 3000);
+      }
     }
-  }, [loadBotpressScript, initializeBotpress]);
+  }, [loadBotpressScript, initializeBotpress, initializationAttempt]);
 
+  // Initialize on component mount and retry attempts
   useEffect(() => {
     const timer = setTimeout(() => {
       initializeBotpressChats();
-    }, 1000);
+    }, 1000); // Initial delay
+
     return () => clearTimeout(timer);
   }, [initializeBotpressChats, initializationAttempt]);
 
-  // Cleanup
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
+      // Reset refs on unmount
+      desktopInitialized.current = false;
+      mobileInitialized.current = false;
       scriptLoaded.current = false;
     };
   }, []);
@@ -179,18 +260,6 @@ function LoginPage() {
       <Helmet>
         <title>Login - SAKTI Platform</title>
         <meta name="description" content="Login to SAKTI - Service Knowledge Platform with integrated chatbot assistance." />
-        <style>{`
-          #webchat .bpWebchat {
-            position: unset;
-            width: 100%;
-            height: 100%;
-            max-height: 100%;
-            max-width: 100%;
-          }
-          #webchat .bpFab {
-            display: none;
-          }
-        `}</style>
       </Helmet>
 
       <div className="min-h-screen w-full grid lg:grid-cols-2">
@@ -202,11 +271,11 @@ function LoginPage() {
             transition={{ duration: 0.6 }} 
             className="w-full max-w-md"
           >
-            <div className="mb-4 self-start">
+            <div className="mb-8 self-start">
               <img 
                 src="https://storage.googleapis.com/hostinger-horizons-assets-prod/7e0684c8-f8f8-4241-a5d6-e17a7b2d1451/141feff6f242f1707b20096e0e33b90c.png" 
                 alt="SAKTI Logo" 
-                className="h-24 object-contain" 
+                className="h-12 mb-6" 
               />
               <h2 className="text-3xl font-bold text-gray-900">Selamat Datang</h2>
               <p className="text-gray-600 mt-2">Masuk untuk melanjutkan ke SAKTI Platform.</p>
@@ -273,12 +342,12 @@ function LoginPage() {
           </motion.div>
         </div>
 
-        {/* Right Column - Chatbot */}
+        {/* Right Column - Desktop Chatbot */}
         <motion.div 
           initial={{ opacity: 0, x: 50 }} 
           animate={{ opacity: 1, x: 0 }} 
           transition={{ duration: 0.6, delay: 0.2 }} 
-          className="hidden lg:flex flex-col items-center justify-center p-8 bg-white h-screen"
+          className="hidden lg:flex flex-col items-center justify-center p-8 bg-gray-50 h-screen"
         >
           <div className="chatbot-container w-full max-w-[550px] flex flex-col items-center text-center">
             <h2 className="text-2xl font-bold text-[#000476] mb-2">
@@ -289,7 +358,10 @@ function LoginPage() {
               <strong> PT SUCOFINDO</strong> can deliver what your business needs. Just ask your question — our chatbot will guide you to the right solution.
             </p>
             <div className="chatbot-box w-full bg-white rounded-lg shadow-md overflow-hidden" style={{ height: '500px' }}>
-              <div id="webchat" className="w-full h-full relative">
+              <div 
+                id="webchat" 
+                className="w-full h-full relative"
+              >
                 {!botpressLoaded && (
                   <div className="flex items-center justify-center h-full text-gray-500">
                     <div className="text-center">
@@ -307,6 +379,39 @@ function LoginPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Mobile Chatbot */}
+        <div className="block lg:hidden bg-gray-50 p-8">
+          <div className="chatbot-container w-full flex flex-col items-center text-center">
+            <h2 className="text-2xl font-bold text-[#000476] mb-2">
+              🤖 SAKTI Assistant
+            </h2>
+            <p className="text-sm text-gray-600 max-w-lg leading-relaxed mb-8">
+              Looking for the right service? <strong>SAKTI Assistant</strong> helps you explore whether
+              <strong> PT SUCOFINDO</strong> can deliver what your business needs. Just ask your question — our chatbot will guide you to the right solution.
+            </p>
+            <div className="chatbot-box w-full bg-white rounded-lg shadow-md overflow-hidden" style={{ height: '400px' }}>
+              <div 
+                id="webchat-mobile" 
+                className="w-full h-full relative"
+              >
+                {!botpressLoaded && (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#000476] mx-auto mb-4"></div>
+                      <p className="text-sm">Loading SAKTI Assistant...</p>
+                      {initializationAttempt > 0 && (
+                        <p className="text-xs text-gray-400 mt-2">
+                          Attempt {initializationAttempt + 1}/4
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
