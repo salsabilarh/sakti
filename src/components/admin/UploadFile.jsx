@@ -89,8 +89,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
 
       const result = await response.json();
       if (!response.ok) {
-        const msg = [result.error, result.hint].filter(Boolean).join(" - ");
-        throw new Error(msg || "Gagal mengunggah file");
+        throw new Error(result.error || result.message || "Gagal mengunggah file");
       }
 
       toast({
@@ -228,11 +227,30 @@ function UploadFile({ onUploadSuccess, onClose }) {
               multiple
               onChange={(e) => {
                 const files = Array.from(e.target.files);
-                const newFiles = files.map(f => ({
-                  file: f,
-                  fileType: ""
-                }));
-                setUploadFiles(prev => [...prev, ...newFiles]);
+                const MAX_FILE_SIZE_MB = 10;
+                const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+                const validFiles = [];
+                files.forEach((f) => {
+                  if (f.size > MAX_FILE_SIZE_BYTES) {
+                    toast({
+                      title: "File terlalu besar",
+                      description: `${f.name} melebihi batas maksimal ${MAX_FILE_SIZE_MB} MB`,
+                      variant: "destructive",
+                    });
+                  } else {
+                    validFiles.push({
+                      file: f,
+                      fileType: "",
+                    });
+                  }
+                });
+
+                if (validFiles.length > 0) {
+                  setUploadFiles((prev) => [...prev, ...validFiles]);
+                }
+
+                // reset input supaya bisa pilih file yang sama lagi kalau salah
                 e.target.value = "";
               }}
               accept=".pdf,.doc,.docx,.ppt,.pptx"
