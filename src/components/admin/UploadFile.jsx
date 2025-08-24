@@ -249,7 +249,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
                     className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50"
                   >
                     {/* Nama file */}
-                    <span className="flex-1 text-sm font-medium truncate">
+                    <span className="flex-1 text-sm font-medium truncate max-w-[250px] overflow-hidden whitespace-nowrap">
                       {item.file.name}
                     </span>
 
