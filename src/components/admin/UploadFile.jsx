@@ -89,7 +89,8 @@ function UploadFile({ onUploadSuccess, onClose }) {
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.error || result.message || "Gagal mengunggah file");
+        const msg = [result.error, result.hint].filter(Boolean).join(" - ");
+        throw new Error(msg || "Gagal mengunggah file");
       }
 
       toast({
