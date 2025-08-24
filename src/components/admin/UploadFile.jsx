@@ -109,7 +109,7 @@ function UploadFile({ onUploadSuccess, onClose }) {
 
       toast({
         title: 'Upload Gagal',
-        description: error.message, // tampilkan pesan detail dari backend
+        description: error.message || error.hint || "Terjadi kesalahan saat upload",
         variant: 'destructive',
       });
     } finally {
