@@ -32,7 +32,10 @@ function Dashboard() {
     };
 
     const initBotpress = () => {
-      if (!window.botpress) return;
+      if (!window.botpress) {
+        console.error("Botpress tidak tersedia di window");
+        return;
+      }
 
       window.botpress.init({
         botId: "ca0e2a53-b7b1-4b4d-90e2-7b93d67b28e0",
@@ -61,6 +64,8 @@ function Dashboard() {
     if (location.pathname === "/dashboard") {
       injectBotpressScript().then(() => {
         initBotpress();
+      }).catch((err) => {
+        console.error("Botpress gagal load:", err);
       });
     }
   }, [location.pathname]);
