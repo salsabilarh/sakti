@@ -87,7 +87,7 @@ function DetailService() {
         <meta name="description" content={`Informasi detail layanan ${service.name}`} />
       </Helmet>
 
-      <div className="px-4 md:px-8 lg:px-20 py-8 space-y-10 bg-gray-50 min-h-screen">
+      <div className="px-4 md:px-8 lg:px-20 py-3 space-y-7 bg-gray-50 min-h-screen">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
           <Link to="/daftar-jasa">
             <Button variant="outline" className="mb-6">
